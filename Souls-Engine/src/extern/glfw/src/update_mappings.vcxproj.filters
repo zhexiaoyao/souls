@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\CMakeFiles\df8a64327effd92a0006f610a267b113\update_mappings.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\extern\glfw\src\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\extern\glfw\src\mappings.h.in">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\extern\glfw\CMake\GenerateMappings.cmake" />
+    <None Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\extern\glfw\src\CMakeFiles\update_mappings" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{12D5F6DE-A32B-38C7-BBD6-5F2A6175D698}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{4C81E972-48F5-38D9-891B-C2364C03FDEF}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,46 @@
+# 构建目录
+build/
+[Ss]ouls-Engine/build/
+[Ss]ouls-Engine/vcpkg_installed/
+
+# 日志文件
+*.log
+debug.log
+
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake.user
+
+# 编译产物
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.dll
+*.lib
+*.exp
+
+# 截图文件（可选，如果不需要提交的话）
+# *.png
+
+# vcpkg 构建文件
+vcpkg/buildtrees/
+vcpkg/downloads/
+vcpkg/installed/
+vcpkg/packages/
+vcpkg/vcpkg_installed/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+

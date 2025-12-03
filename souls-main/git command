@@ -1,0 +1,3 @@
+git add .
+git commit -m "描述本次更改"
+git push

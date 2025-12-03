@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\CMakeFiles\4.1.1\CompilerIdC\CMakeCCompilerId.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\CMakeFiles\4.1.1\CompilerIdCXX\CMakeCXXCompilerId.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\core\Grid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\core\OpenGLContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\core\Window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\core\glad_loader.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\core\Grid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\core\OpenGLContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\src\core\Window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\code\computer_graphics\final_cursor1.0\Souls-Engine\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{4C81E972-48F5-38D9-891B-C2364C03FDEF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{07452FEF-6394-3134-A567-A32D7FC46DA7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
