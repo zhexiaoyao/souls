@@ -70,17 +70,11 @@ void SelectionSystem::UpdateDrag(const glm::vec2& mousePos, const Camera& camera
     }
     
     if (m_rotationMode) {
-        // 旋转模式：根据鼠标移动旋转对象
-        // 参照示例代码风格，使用glm::radians和明确的旋转角度计算
-        float rotationSpeed = 500.0f;  // 旋转速度（度/秒）
-        
-        // 计算旋转角度（转换为弧度）
-        float yawAngle = deltaMouse.x * rotationSpeed;   // 水平旋转（Y轴）
-        float pitchAngle = -deltaMouse.y * rotationSpeed; // 垂直旋转（X轴，反转Y轴）
-        
-        // 应用旋转（使用度为单位，Node内部会转换为弧度）
-        m_selectedNode->RotateY(yawAngle);
-        m_selectedNode->RotateX(pitchAngle);
+        // 旋转模式：根据鼠标移动旋转对象（大幅增加旋转速度）
+        float rotationSpeed = 500.0f;  // 从100.0f增加到500.0f
+        // 不使用deltaTime，直接根据鼠标移动量旋转
+        m_selectedNode->RotateY(deltaMouse.x * rotationSpeed);
+        m_selectedNode->RotateX(-deltaMouse.y * rotationSpeed);
     } else {
         // 平移模式：让物体在垂直于相机方向的平面上移动
         // 始终使用相机坐标系统，不受物体旋转影响
@@ -108,27 +102,21 @@ void SelectionSystem::UpdateDrag(const glm::vec2& mousePos, const Camera& camera
         targetWorldPos += cameraUp * screenY * distanceAlongFront * tanHalfFov;
         
         // 计算世界空间中的偏移量（从拖拽开始位置到目标位置）
+        // 目标位置在垂直于相机方向的平面上
         glm::vec3 worldOffset = targetWorldPos - m_dragStartPosition;
         
         // 将世界空间偏移量转换为局部空间偏移量
-        // 关键：只考虑父节点的旋转和缩放，不考虑当前节点的旋转
-        // 这样确保平移始终在垂直于相机方向的平面上
-        Node* parent = m_selectedNode->GetParent();
-        glm::vec3 localOffset;
-        
-        if (parent) {
-            // 有父节点：将世界偏移量转换为父节点的局部空间
-            // 只考虑旋转和缩放，不考虑平移（因为这是方向向量）
-            glm::mat4 parentWorldTransform = parent->GetWorldTransform();
-            // 提取旋转和缩放部分（移除平移）
-            glm::mat4 parentRotationScale = parentWorldTransform;
-            parentRotationScale[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            glm::mat4 parentRotationScaleInverse = glm::inverse(parentRotationScale);
-            localOffset = glm::vec3(parentRotationScaleInverse * glm::vec4(worldOffset, 0.0f));
-        } else {
-            // 没有父节点，世界偏移量就是局部偏移量
-            localOffset = worldOffset;
-        }
+        // 关键修复：需要考虑物体自身的旋转，而不仅仅是父节点的旋转
+        // 这样才能确保物体旋转后，平移方向在局部坐标系中正确
+        // 
+        // 方法：使用节点的完整世界变换矩阵（包括父节点和自身的所有变换）
+        // 提取旋转和缩放部分（移除平移，因为偏移量是方向向量）
+        // 使用逆矩阵将世界偏移量转换到局部空间
+        glm::mat4 worldTransform = m_selectedNode->GetWorldTransform();
+        glm::mat4 rotationScale = worldTransform;
+        rotationScale[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);  // 移除平移部分
+        glm::mat4 rotationScaleInverse = glm::inverse(rotationScale);
+        glm::vec3 localOffset = glm::vec3(rotationScaleInverse * glm::vec4(worldOffset, 0.0f));
         
         // 将偏移量加到拖拽开始时的局部位置
         glm::vec3 newLocalPos = m_dragStartLocalPosition + localOffset;

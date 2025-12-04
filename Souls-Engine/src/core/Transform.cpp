@@ -23,12 +23,17 @@ Transform::Transform(const glm::vec3& position, const glm::vec3& rotation, const
 glm::mat4 Transform::GetMatrix() const {
     if (m_dirty) {
         // 计算变换矩阵：T * R * S
+        // 正确的顺序：先平移，再旋转，最后缩放
+        // 这样旋转会围绕物体自身的位置进行，而不是围绕原点
         m_matrix = glm::mat4(1.0f);
-        m_matrix = glm::scale(m_matrix, m_scale);
+        // 1. 先平移到物体位置
+        m_matrix = glm::translate(m_matrix, m_position);
+        // 2. 然后旋转（围绕物体位置，因为已经平移了）
         m_matrix = glm::rotate(m_matrix, glm::radians(m_rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
         m_matrix = glm::rotate(m_matrix, glm::radians(m_rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
         m_matrix = glm::rotate(m_matrix, glm::radians(m_rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        m_matrix = glm::translate(m_matrix, m_position);
+        // 3. 最后缩放
+        m_matrix = glm::scale(m_matrix, m_scale);
         m_dirty = false;
     }
     return m_matrix;

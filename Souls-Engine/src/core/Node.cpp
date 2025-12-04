@@ -85,12 +85,17 @@ void Node::SetParent(Node* parent) {
 glm::mat4 Node::GetLocalTransform() const {
     if (m_transformDirty) {
         // 计算局部变换矩阵：T * R * S
+        // 正确的顺序：先平移，再旋转，最后缩放
+        // 这样旋转会围绕物体自身的位置进行，而不是围绕原点
         m_localTransform = glm::mat4(1.0f);
-        m_localTransform = glm::scale(m_localTransform, m_scale);
+        // 1. 先平移到物体位置
+        m_localTransform = glm::translate(m_localTransform, m_position);
+        // 2. 然后旋转（围绕物体位置，因为已经平移了）
         m_localTransform = glm::rotate(m_localTransform, glm::radians(m_rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
         m_localTransform = glm::rotate(m_localTransform, glm::radians(m_rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
         m_localTransform = glm::rotate(m_localTransform, glm::radians(m_rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        m_localTransform = glm::translate(m_localTransform, m_position);
+        // 3. 最后缩放
+        m_localTransform = glm::scale(m_localTransform, m_scale);
         m_transformDirty = false;
     }
     return m_localTransform;
