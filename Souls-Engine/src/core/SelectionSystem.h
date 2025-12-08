@@ -58,6 +58,7 @@ private:
     glm::vec3 m_dragStartLocalPosition;  // 拖拽开始时的物体局部位置
     glm::vec3 m_dragStartRotation;
     float m_dragStartDistance;  // 拖拽开始时物体到相机的投影距离
+    glm::mat4 m_dragStartWorldTransform;  // 拖拽开始时的世界变换矩阵（用于坐标转换）
     
     // 缩放相关
     glm::vec3 m_scaleStartScale;  // 缩放开始时的缩放值

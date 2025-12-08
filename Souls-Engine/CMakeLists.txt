@@ -42,6 +42,10 @@ endif()
 # 包含stb_image头文件
 include_directories(${CMAKE_SOURCE_DIR}/extern/stb)
 
+# 包含ImGui头文件
+include_directories(${CMAKE_SOURCE_DIR}/extern/imgui)
+include_directories(${CMAKE_SOURCE_DIR}/extern/imgui/backends)
+
 # 明确指定源码文件（避免包含构建目录中的文件）
 set(SOURCES
     src/main.cpp
@@ -56,6 +60,16 @@ set(SOURCES
     src/core/ObjectManager.cpp
     src/core/Transform.cpp
     src/core/SelectionSystem.cpp
+    src/core/Material.cpp
+    src/core/Light.cpp
+    src/core/LightManager.cpp
+    src/core/ImGuiSystem.cpp
+    extern/imgui/imgui.cpp
+    extern/imgui/imgui_draw.cpp
+    extern/imgui/imgui_tables.cpp
+    extern/imgui/imgui_widgets.cpp
+    extern/imgui/backends/imgui_impl_glfw.cpp
+    extern/imgui/backends/imgui_impl_opengl3.cpp
     src/geometry/Mesh.cpp
     src/geometry/Cube.cpp
     src/geometry/Sphere.cpp

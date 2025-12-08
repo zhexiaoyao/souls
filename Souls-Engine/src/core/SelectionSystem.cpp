@@ -20,6 +20,7 @@ SelectionSystem::SelectionSystem()
     , m_dragStartLocalPosition(0.0f, 0.0f, 0.0f)
     , m_dragStartRotation(0.0f, 0.0f, 0.0f)
     , m_dragStartDistance(5.0f)
+    , m_dragStartWorldTransform(1.0f)
     , m_scaleStartScale(1.0f, 1.0f, 1.0f)
     , m_scaleStartIntersection(0.0f, 0.0f, 0.0f)
     , m_scaleStartMouseWorldPos(0.0f, 0.0f, 0.0f)
@@ -48,6 +49,8 @@ void SelectionSystem::StartDrag(const glm::vec2& mousePos, const Camera& camera)
     // 保存拖拽开始时的局部位置
     m_dragStartLocalPosition = m_selectedNode->GetPosition();
     m_dragStartRotation = m_selectedNode->GetRotation();
+    // 保存拖拽开始时的世界变换矩阵（用于坐标转换，避免旋转影响）
+    m_dragStartWorldTransform = m_selectedNode->GetWorldTransform();
     
     // 计算并保存物体到相机的投影距离（在拖拽过程中保持不变）
     glm::vec3 cameraPos = camera.GetPosition();
@@ -105,18 +108,25 @@ void SelectionSystem::UpdateDrag(const glm::vec2& mousePos, const Camera& camera
         // 目标位置在垂直于相机方向的平面上
         glm::vec3 worldOffset = targetWorldPos - m_dragStartPosition;
         
-        // 将世界空间偏移量转换为局部空间偏移量
-        // 关键修复：需要考虑物体自身的旋转，而不仅仅是父节点的旋转
-        // 这样才能确保物体旋转后，平移方向在局部坐标系中正确
-        // 
-        // 方法：使用节点的完整世界变换矩阵（包括父节点和自身的所有变换）
-        // 提取旋转和缩放部分（移除平移，因为偏移量是方向向量）
-        // 使用逆矩阵将世界偏移量转换到局部空间
-        glm::mat4 worldTransform = m_selectedNode->GetWorldTransform();
-        glm::mat4 rotationScale = worldTransform;
-        rotationScale[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);  // 移除平移部分
-        glm::mat4 rotationScaleInverse = glm::inverse(rotationScale);
-        glm::vec3 localOffset = glm::vec3(rotationScaleInverse * glm::vec4(worldOffset, 0.0f));
+        // 关键修复：平移应该始终在垂直于相机方向的平面上，不受物体自身旋转影响
+        // 方法：只考虑父节点的变换，不考虑物体自身的旋转和缩放
+        // 这样确保平移平面始终垂直于相机方向，不会跟随物体旋转
+        Node* parent = m_selectedNode->GetParent();
+        glm::vec3 localOffset;
+        
+        if (parent) {
+            // 有父节点：将世界偏移量转换到父节点的局部空间
+            // 只考虑父节点的旋转和缩放，不考虑平移（因为这是方向向量）
+            glm::mat4 parentWorldTransform = parent->GetWorldTransform();
+            glm::mat4 parentRotationScale = parentWorldTransform;
+            parentRotationScale[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);  // 移除平移列
+            glm::mat4 parentRotationScaleInv = glm::inverse(parentRotationScale);
+            localOffset = glm::vec3(parentRotationScaleInv * glm::vec4(worldOffset, 0.0f));
+        } else {
+            // 没有父节点：世界偏移量直接作为局部偏移量
+            // 这样平移平面始终垂直于相机方向，不受物体旋转影响
+            localOffset = worldOffset;
+        }
         
         // 将偏移量加到拖拽开始时的局部位置
         glm::vec3 newLocalPos = m_dragStartLocalPosition + localOffset;

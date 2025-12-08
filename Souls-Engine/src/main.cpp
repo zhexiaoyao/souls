@@ -7,7 +7,13 @@
 #include "core/Camera.h"
 #include "core/ObjectManager.h"
 #include "core/SceneNode.h"
+#include "core/Node.h"
 #include "core/SelectionSystem.h"
+// 材质系统已删除
+// #include "core/Material.h"
+#include "core/ImGuiSystem.h"
+#include "core/Light.h"
+#include "core/LightManager.h"
 #include "geometry/Cube.h"
 #include "geometry/Sphere.h"
 #include "geometry/Cylinder.h"
@@ -149,6 +155,20 @@ int main() {
     SoulsEngine::SelectionSystem selectionSystem;
     std::cout << "Selection System created" << std::endl;
 
+    // 创建光源管理器
+    SoulsEngine::LightManager lightManager;
+    std::cout << "Light Manager created" << std::endl;
+
+    // 创建ImGui系统
+    SoulsEngine::ImGuiSystem imguiSystem;
+    if (!imguiSystem.Initialize(window.GetGLFWWindow())) {
+        std::cerr << "Failed to initialize ImGui" << std::endl;
+        window.Shutdown();
+        std::cin.get();
+        return -1;
+    }
+    std::cout << "ImGui System initialized" << std::endl;
+
     // 几何体计数器（用于命名）
     int geometryCounter = 0;
 
@@ -165,6 +185,10 @@ int main() {
     std::cout << "  - Scale transform implemented" << std::endl;
     std::cout << "  - Transform matrix calculation implemented" << std::endl;
     std::cout << "  - Local/World coordinate transform implemented" << std::endl;
+    std::cout << "Week 2 Day 6-7: Material System completed!" << std::endl;
+    std::cout << "  - Material data structure implemented" << std::endl;
+    std::cout << "  - Basic shader parameters implemented" << std::endl;
+    std::cout << "  - Material property modification implemented" << std::endl;
     std::cout << "Geometry objects in scene:" << std::endl;
     std::cout << "  - Cube (Red)" << std::endl;
     std::cout << "  - Sphere (Green)" << std::endl;
@@ -238,36 +262,66 @@ int main() {
                         auto mesh = std::make_shared<SoulsEngine::Cube>(1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
                         name = "Cube_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
+                        // 材质系统已删除，设置材质代码已注释
+                        // auto material = std::make_shared<SoulsEngine::Material>();
+                        // material->SetColor(1.0f, 0.0f, 0.0f);
+                        // material->SetSpecular(0.5f, 0.5f, 0.5f);
+                        // material->SetShininess(32.0f);
+                        // material->SetName("RedMaterial");
+                        // newNode->SetMaterial(material);
                         break;
                     }
                     case 1: { // Sphere
                         auto mesh = std::make_shared<SoulsEngine::Sphere>(0.8f, 36, 18, glm::vec3(0.0f, 1.0f, 0.0f));
                         name = "Sphere_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
+                        // 材质系统已删除，设置材质代码已注释
+                        // auto material = std::make_shared<SoulsEngine::Material>(SoulsEngine::Material::CreateEmerald());
+                        // newNode->SetMaterial(material);
                         break;
                     }
                     case 2: { // Cylinder
                         auto mesh = std::make_shared<SoulsEngine::Cylinder>(0.7f, 1.5f, 36, glm::vec3(0.0f, 0.0f, 1.0f));
                         name = "Cylinder_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
+                        // 材质系统已删除，设置材质代码已注释
+                        // auto material = std::make_shared<SoulsEngine::Material>();
+                        // material->SetColor(0.0f, 0.0f, 1.0f);
+                        // material->SetSpecular(0.7f, 0.7f, 0.7f);
+                        // material->SetShininess(64.0f);
+                        // material->SetName("BlueMaterial");
+                        // newNode->SetMaterial(material);
                         break;
                     }
                     case 3: { // Cone
                         auto mesh = std::make_shared<SoulsEngine::Cone>(0.7f, 1.5f, 36, glm::vec3(1.0f, 1.0f, 0.0f));
                         name = "Cone_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
+                        // 材质系统已删除，设置材质代码已注释
+                        // auto material = std::make_shared<SoulsEngine::Material>(SoulsEngine::Material::CreateGold());
+                        // newNode->SetMaterial(material);
                         break;
                     }
                     case 4: { // Prism
                         auto mesh = std::make_shared<SoulsEngine::Prism>(6, 0.7f, 1.5f, glm::vec3(1.0f, 0.0f, 1.0f));
                         name = "Prism_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
+                        // 材质系统已删除，设置材质代码已注释
+                        // auto material = std::make_shared<SoulsEngine::Material>();
+                        // material->SetColor(1.0f, 0.0f, 1.0f);
+                        // material->SetSpecular(0.8f, 0.8f, 0.8f);
+                        // material->SetShininess(48.0f);
+                        // material->SetName("MagentaMaterial");
+                        // newNode->SetMaterial(material);
                         break;
                     }
                     case 5: { // Frustum
                         auto mesh = std::make_shared<SoulsEngine::Frustum>(6, 0.4f, 0.7f, 1.5f, glm::vec3(0.0f, 1.0f, 1.0f));
                         name = "Frustum_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
+                        // 材质系统已删除，设置材质代码已注释
+                        // auto material = std::make_shared<SoulsEngine::Material>(SoulsEngine::Material::CreateJade());
+                        // newNode->SetMaterial(material);
                         break;
                     }
                 }
@@ -345,6 +399,20 @@ int main() {
                     selectionSystem.StartDrag(normalizedMousePos, camera);
                     std::cout << "Selected: " << pickedNode->GetName() << std::endl;
                 } else {
+                    // 在取消选择前，如果之前选中的是光源指示器，确保光源位置已同步
+                    auto previouslySelected = selectionSystem.GetSelectedNode();
+                    if (previouslySelected) {
+                        std::string nodeName = previouslySelected->GetName();
+                        if (nodeName.find("LightIndicator_") == 0) {
+                            std::string lightName = nodeName.substr(15); // "LightIndicator_" 长度为15
+                            auto light = lightManager.FindLightByName(lightName);
+                            if (light) {
+                                glm::vec3 worldPos = previouslySelected->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                                light->SetPosition(worldPos);
+                                std::cout << "Light position synced before deselect: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
+                            }
+                        }
+                    }
                     selectionSystem.Deselect();
                     std::cout << "Deselected" << std::endl;
                     // 没有选中对象时，记录鼠标位置用于相机旋转（点击时保持视角不变）
@@ -358,6 +426,21 @@ int main() {
         } else if (!leftMouseDown && leftMousePressed) {
             // 鼠标刚释放
             if (selectionSystem.IsDragging()) {
+                // 在结束拖拽前，最后一次同步光源位置（确保位置准确）
+                auto selectedNode = selectionSystem.GetSelectedNode();
+                if (selectedNode) {
+                    std::string nodeName = selectedNode->GetName();
+                    if (nodeName.find("LightIndicator_") == 0) {
+                        // 提取光源名称（去掉 "LightIndicator_" 前缀）
+                        std::string lightName = nodeName.substr(15); // "LightIndicator_" 长度为15
+                        auto light = lightManager.FindLightByName(lightName);
+                        if (light) {
+                            // 获取指示器的世界位置并更新光源位置
+                            glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                            light->SetPosition(worldPos);
+                        }
+                    }
+                }
                 selectionSystem.EndDrag();
             }
             if (selectionSystem.IsScaling()) {
@@ -371,6 +454,26 @@ int main() {
             } else if (selectionSystem.IsDragging()) {
                 // 拖拽模式
                 selectionSystem.UpdateDrag(normalizedMousePos, camera, deltaTime, aspectRatio);
+                
+                // 如果选中的是光源指示器，同步更新光源位置
+                auto selectedNode = selectionSystem.GetSelectedNode();
+                if (selectedNode) {
+                    std::string nodeName = selectedNode->GetName();
+                    if (nodeName.find("LightIndicator_") == 0) {
+                        // 提取光源名称（去掉 "LightIndicator_" 前缀）
+                        std::string lightName = nodeName.substr(15); // "LightIndicator_" 长度为15
+                        auto light = lightManager.FindLightByName(lightName);
+                        if (light) {
+                            // 获取指示器的世界位置并更新光源位置
+                            glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                            light->SetPosition(worldPos);
+                            // 调试输出
+                            std::cout << "Light position updated to: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
+                        } else {
+                            std::cout << "Warning: Light not found with name: " << lightName << std::endl;
+                        }
+                    }
+                }
             } else if (!selectionSystem.HasSelection()) {
                 // 没有选中几何体时，旋转相机（三维旋转）
                 // 如果还没有记录鼠标位置，先记录（点击时保持视角不变）
@@ -402,6 +505,9 @@ int main() {
         }
         leftMousePressed = leftMouseDown;
 
+        // ImGui新帧
+        imguiSystem.BeginFrame();
+
         // 清除颜色和深度缓冲区
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -415,9 +521,49 @@ int main() {
         // 设置视图和投影矩阵到Shader
         shader.SetMat4("view", glm::value_ptr(view));
         shader.SetMat4("projection", glm::value_ptr(projection));
-
-        // 更新场景（计算变换矩阵）
+        
+        // 更新场景（计算变换矩阵）- 必须在获取光源位置之前更新，以确保指示器位置正确
         objectManager.Update();
+        
+        // 在更新场景后，如果正在拖拽光源指示器，确保光源位置已同步
+        if (selectionSystem.IsDragging()) {
+            auto selectedNode = selectionSystem.GetSelectedNode();
+            if (selectedNode) {
+                std::string nodeName = selectedNode->GetName();
+                if (nodeName.find("LightIndicator_") == 0) {
+                    std::string lightName = nodeName.substr(15); // "LightIndicator_" 长度为15
+                    auto light = lightManager.FindLightByName(lightName);
+                    if (light) {
+                        glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                        light->SetPosition(worldPos);
+                        // 确保光源位置已更新（在渲染前）
+                    } else {
+                        std::cout << "Warning: Light not found with name: " << lightName << " (before render)" << std::endl;
+                    }
+                }
+            }
+        }
+        
+        // 设置光源参数（使用LightManager中的光源）- 在更新场景和同步光源位置之后
+        glm::vec3 lightPos;
+        glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+        float lightIntensity = 0.0f;  // 默认无光照
+        
+        auto firstLight = lightManager.GetFirstLight();
+        if (firstLight) {
+            lightPos = firstLight->GetPosition();
+            lightColor = firstLight->GetColor();
+            lightIntensity = firstLight->GetIntensity();
+        } else {
+            // 如果没有光源，将光源强度设置为0（禁用光照）
+            lightPos = glm::vec3(0.0f, 0.0f, 0.0f);  // 位置不重要，因为强度为0
+            lightIntensity = 0.0f;
+        }
+        
+        glm::vec3 viewPos = camera.GetPosition();
+        shader.SetVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+        shader.SetVec3("lightColor", lightColor.r * lightIntensity, lightColor.g * lightIntensity, lightColor.b * lightIntensity);
+        shader.SetVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
 
         // 使用场景图系统渲染所有对象
         objectManager.Render(&shader);
@@ -435,6 +581,58 @@ int main() {
             // 恢复颜色设置
             shader.SetBool("useOverrideColor", false);
         }
+        
+        // 渲染光源指示器（小球体线框）
+        auto lights = lightManager.GetLights();
+        for (auto light : lights) {
+            std::string indicatorName = "LightIndicator_" + light->GetName();
+            auto indicatorNode = objectManager.FindNode(indicatorName);
+            if (indicatorNode) {
+                // 只有在光源指示器没有被选中时，才让指示器跟随光源位置
+                // 如果指示器被选中（无论是否正在拖拽），都应该保持其当前位置
+                // 这样拖拽后的位置不会被重置
+                auto selectedNode = selectionSystem.GetSelectedNode();
+                bool isSelected = (selectedNode == indicatorNode);
+                
+                if (!isSelected) {
+                    // 指示器没有被选中：让它跟随光源位置
+                    // 需要将光源的世界位置转换为指示器的局部位置
+                    glm::vec3 lightWorldPos = light->GetPosition();
+                    // 获取指示器当前的世界位置
+                    glm::vec3 indicatorWorldPos = indicatorNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                    // 只有当光源位置和指示器位置不同时才更新（避免不必要的重置）
+                    float distance = glm::length(lightWorldPos - indicatorWorldPos);
+                    if (distance > 0.01f) {  // 如果距离大于0.01，才更新位置
+                        SoulsEngine::Node* parent = indicatorNode->GetParent();
+                        if (parent) {
+                            // 有父节点：将世界位置转换为局部位置
+                            glm::mat4 parentWorldInv = glm::inverse(parent->GetWorldTransform());
+                            glm::vec3 localPos = glm::vec3(parentWorldInv * glm::vec4(lightWorldPos, 1.0f));
+                            indicatorNode->SetPosition(localPos);
+                        } else {
+                            // 没有父节点：直接使用世界位置
+                            indicatorNode->SetPosition(lightWorldPos);
+                        }
+                    }
+                }
+                // 如果指示器被选中，保持其当前位置不变（由拖拽系统控制）
+                
+                // 渲染为线框模式（黄色线框）
+                shader.SetBool("useOverrideColor", true);
+                shader.SetVec3("overrideColor", 1.0f, 1.0f, 0.0f);  // 黄色
+                
+                glm::mat4 identity = glm::mat4(1.0f);
+                indicatorNode->RenderWireframe(identity, &shader);
+                
+                shader.SetBool("useOverrideColor", false);
+            }
+        }
+
+        // 渲染ImGui侧栏
+        imguiSystem.RenderSidebar(&objectManager, &selectionSystem, &camera, &lightManager, aspectRatio);
+        
+        // ImGui结束帧并渲染
+        imguiSystem.EndFrame();
 
         // 交换前后缓冲区
         window.SwapBuffers();
@@ -444,6 +642,7 @@ int main() {
     }
 
     // 清理资源（场景图系统会自动清理）
+    imguiSystem.Shutdown();
     objectManager.Clear();
 
     std::cout << "Shutting down..." << std::endl;
