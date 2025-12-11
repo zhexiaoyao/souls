@@ -3,9 +3,9 @@
 #include <iostream>
 #include <filesystem>
 
-// 包含stb_image头文件
-// 注意：需要从 https://github.com/nothings/stb 下载完整的 stb_image.h
-// 并替换 extern/stb/stb_image.h
+// 包含stb_image头文�?
+// 注意：需要从 https://github.com/nothings/stb 下载完整�? stb_image.h
+// 并替�? extern/stb/stb_image.h
 #include "stb_image.h"
 
 namespace SoulsEngine {
@@ -26,7 +26,7 @@ Texture::~Texture() {
 }
 
 bool Texture::LoadFromFile(const std::string& path, bool flipVertically) {
-    // 如果已经加载过，先删除旧的纹理
+    // 如果已经加载过，先删除旧的纹�?
     if (m_textureID != 0) {
         glDeleteTextures(1, &m_textureID);
         m_textureID = 0;
@@ -35,8 +35,8 @@ bool Texture::LoadFromFile(const std::string& path, bool flipVertically) {
     // 构建完整路径
     std::string fullPath = "assets/textures/" + path;
     
-    // 垂直翻转图像（OpenGL的UV原点在左下角，而图像通常原点在左上角）
-    // 注意：需要完整的stb_image.h才能使用此函数
+    // 垂直翻转图像（OpenGL的UV原点在左下角，而图像通常原点在左上角�?
+    // 注意：需要完整的stb_image.h才能使用此函�?
     extern "C" void stbi_set_flip_vertically_on_load(int flag);
     stbi_set_flip_vertically_on_load(flipVertically ? 1 : 0);
 
@@ -67,7 +67,7 @@ void Texture::CreateTexture(unsigned char* data, int width, int height, int chan
     glGenTextures(1, &m_textureID);
     glBindTexture(GL_TEXTURE_2D, m_textureID);
 
-    // 根据通道数确定格式
+    // 根据通道数确定格�?
     GLenum format = GL_RGB;
     if (channels == 1) {
         format = GL_RED;
@@ -84,11 +84,11 @@ void Texture::CreateTexture(unsigned char* data, int width, int height, int chan
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // 设置默认纹理参数
-    // 缩小过滤：使用Mipmap线性过滤
+    // 缩小过滤：使用Mipmap线性过�?
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    // 放大过滤：线性过滤
+    // 放大过滤：线性过�?
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // 环绕模式：重复
+    // 环绕模式：重�?
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -101,7 +101,7 @@ void Texture::Bind(unsigned int unit) const {
         return;
     }
 
-    // 激活纹理单元
+    // 激活纹理单�?
     glActiveTexture(GL_TEXTURE0 + unit);
     // 绑定纹理
     glBindTexture(GL_TEXTURE_2D, m_textureID);

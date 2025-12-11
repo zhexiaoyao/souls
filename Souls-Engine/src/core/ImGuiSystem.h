@@ -1,43 +1,45 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include "Material.h"
 #include <memory>
+#include <vector>
 
-// 前向声明
+// 鍓嶅悜澹版槑
 struct ImGuiContext;
 
 namespace SoulsEngine {
 
-// 前向声明
+// 鍓嶅悜澹版槑
 class Camera;
 class ObjectManager;
 class SelectionSystem;
 class Material;
 class LightManager;
 
-// ImGui系统管理类
+// ImGui绯荤粺绠＄悊绫�
 class ImGuiSystem {
 public:
     ImGuiSystem();
     ~ImGuiSystem();
 
-    // 禁止拷贝
+    // 绂佹鎷疯礉
     ImGuiSystem(const ImGuiSystem&) = delete;
     ImGuiSystem& operator=(const ImGuiSystem&) = delete;
 
-    // 初始化ImGui
+    // 鍒濆鍖朓mGui
     bool Initialize(GLFWwindow* window);
 
-    // 清理ImGui
+    // 娓呯悊ImGui
     void Shutdown();
 
-    // 开始新帧
+    // 寮€濮嬫柊甯�?
     void BeginFrame();
 
-    // 结束帧并渲染
+    // 缁撴潫甯у苟娓叉煋
     void EndFrame();
 
-    // 渲染侧栏UI
+    // 娓叉煋渚ф爮UI
     void RenderSidebar(ObjectManager* objectManager, SelectionSystem* selectionSystem, 
                        Camera* camera, LightManager* lightManager, float aspectRatio);
 
@@ -45,21 +47,26 @@ private:
     GLFWwindow* m_window;
     ImGuiContext* m_context;
 
-    // UI状态
+    // UI鐘舵€�
     bool m_showGeometryMenu;
     bool m_showMaterialMenu;
     bool m_showLightMenu;
     bool m_showModelMenu;
 
-    // 灯光参数
-    float m_lightAngle;      // 光照张角（0-360度）
-    float m_lightIntensity;  // 光照强度（0-10）
+    // 鐏厜鍙傛暟
+    float m_lightAngle;      // 鍏夌収寮犺锛�0-360搴︼�?
+    float m_lightIntensity;  // 鍏夌収寮哄害锛�0-10锛�
 
-    // 辅助方法
+    // 杈呭姪鏂规硶
     void RenderGeometryMenu(ObjectManager* objectManager, SelectionSystem* selectionSystem, Camera* camera);
     void RenderMaterialMenu(SelectionSystem* selectionSystem);
     void RenderLightMenu();
     void RenderModelMenu();
+
+    // 生成预设材质列表
+    void InitMaterialPresets();
+
+    std::vector<Material> m_materialPresets;
 };
 
 } // namespace SoulsEngine

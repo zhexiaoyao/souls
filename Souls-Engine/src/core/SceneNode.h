@@ -10,7 +10,7 @@ class Mesh;
 class Shader;
 class Material;
 
-// 场景节点（可以附加Mesh和Material）
+// 场景节点（可以附加Mesh和Material�?
 class SceneNode : public Node {
 public:
     SceneNode(const std::string& name = "SceneNode");
@@ -27,7 +27,7 @@ public:
     // 渲染（重写基类方法）
     virtual void Render(const glm::mat4& parentTransform, Shader* shader) override;
     
-    // 渲染线框（用于选中高亮）
+    // 渲染线框（用于选中高亮�?
     void RenderWireframe(const glm::mat4& parentTransform, Shader* shader);
 
 private:

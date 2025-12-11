@@ -8,7 +8,7 @@ in vec3 Normal;
 uniform bool useOverrideColor;
 uniform vec3 overrideColor;
 
-// 材质属性
+// 材质属�?
 struct Material {
     vec3 ambient;
     vec3 diffuse;
@@ -27,10 +27,10 @@ void main()
     if (useOverrideColor) {
         FragColor = vec4(overrideColor, 1.0);
     } else {
-        // 环境光
+        // 环境�?
         vec3 ambient = material.ambient * lightColor;
         
-        // 漫反射
+        // 漫反�?
         vec3 norm = normalize(Normal);
         vec3 lightDir = normalize(lightPos - FragPos);
         float diff = max(dot(norm, lightDir), 0.0);
@@ -42,7 +42,7 @@ void main()
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
         vec3 specular = material.specular * spec * lightColor;
         
-        // 最终颜色 = 环境光 + 漫反射 + 镜面反射
+        // 最终颜�? = 环境�? + 漫反�? + 镜面反射
         vec3 result = ambient + diffuse + specular;
         FragColor = vec4(result, 1.0);
     }
