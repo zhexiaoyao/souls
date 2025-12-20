@@ -14,6 +14,7 @@ struct Material {
     vec3 diffuse;
     vec3 specular;
     float shininess;
+    float alpha;
 };
 uniform Material material;
 
@@ -44,7 +45,7 @@ void main()
         
         // 最终颜�? = 环境�? + 漫反�? + 镜面反射
         vec3 result = ambient + diffuse + specular;
-        FragColor = vec4(result, 1.0);
+        FragColor = vec4(result, material.alpha);
     }
 }
 

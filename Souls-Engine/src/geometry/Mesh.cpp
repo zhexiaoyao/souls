@@ -18,32 +18,32 @@ Mesh::~Mesh() {
 }
 
 void Mesh::SetupMesh(const std::vector<float>& vertices) {
-    m_vertexCount = vertices.size() / 6; // 每个顶点6个float
+    m_vertexCount = vertices.size() / 6; // 濮ｅ繋閲滄い鍓佸仯6娑撶專loat
 
-    // 创建VAO和VBO
+    // 閸掓稑缂揤AO閸滃BO
     glGenVertexArrays(1, &m_VAO);
     glGenBuffers(1, &m_VBO);
 
-    // 绑定VAO
+    // 缂佹垵鐣綱AO
     glBindVertexArray(m_VAO);
 
-    // 绑定VBO并上传数据
+    // 缂佹垵鐣綱BO楠炴湹绗傛导鐘虫殶閹�?
     glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
     glBufferData(GL_ARRAY_BUFFER, 
                  static_cast<GLsizeiptr>(vertices.size() * sizeof(float)), 
                  vertices.data(), 
                  GL_STATIC_DRAW);
 
-    // 设置顶点属性
-    // 位置属性 (location = 0)
+    // 鐠佸墽鐤嗘い鍓佸仯鐏炵偞鈧�?
+    // 娴ｅ秶鐤嗙仦鐐粹偓? (location = 0)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     
-    // 颜色属性 (location = 1)
+    // 妫版粏澹婄仦鐐粹偓? (location = 1)
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // 解绑
+    // 鐟欙絿绮�
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
@@ -57,14 +57,14 @@ void Mesh::Draw() const {
 }
 
 void Mesh::DrawWireframe() const {
-    // 线框效果通过 SceneNode::RenderWireframe 实现
+    // 缁炬寧顢嬮弫鍫熺亯闁俺绻� SceneNode::RenderWireframe 鐎圭偟骞�
     if (m_VAO != 0 && m_vertexCount > 0) {
-        // 注意：glPolygonMode(GL_LINE) 在 OpenGL Core Profile 中不可用
-        // 我们使用一个简化的方法：直接渲染填充模式，边框效果通过
-        // SceneNode::RenderWireframe 中的缩放变换和shader的覆盖颜色来实现
+        // 濞夈劍鍓伴敍姝PolygonMode(GL_LINE) 閸�? OpenGL Core Profile 娑擃厺绗夐崣顖滄暏
+        // 閹存垳婊戞担璺ㄦ暏娑撯偓娑擃亞鐣濋崠鏍畱閺傝纭堕敍姘辨纯閹恒儲瑕嗛弻鎾筹綖閸忓懏膩瀵骏绱濇潏瑙勵攱閺佸牊鐏夐柅姘崇箖
+        // SceneNode::RenderWireframe 娑擃厾娈戠紓鈺傛杹閸欐ɑ宕查崪瀹籬ader閻ㄥ嫯顩惄鏍杹閼瑰弶娼电€圭偟骞�
         
-        // 渲染边框（使用填充模式，但通过shader的覆盖颜色来实现黑色边框效果）
-        // 边框效果通过稍微放大对象（在SceneNode中实现）和黑色覆盖颜色实现
+        // 濞撳弶鐓嬫潏瑙勵攱閿涘牅濞囬悽銊ワ綖閸忓懏膩瀵骏绱濇担鍡涒偓姘崇箖shader閻ㄥ嫯顩惄鏍杹閼瑰弶娼电€圭偟骞囨鎴ｅ鏉堣顢嬮弫鍫熺亯閿�?
+        // 鏉堣顢嬮弫鍫熺亯闁俺绻冪粙宥呬簳閺€鎯с亣鐎电钖勯敍鍫濇躬SceneNode娑擃厼鐤勯悳甯礆閸滃矂绮﹂懝鑼额洬閻╂牠顤侀懝鎻掔杽閻�?
         glBindVertexArray(m_VAO);
         glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(m_vertexCount));
         glBindVertexArray(0);

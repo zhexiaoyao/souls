@@ -1,5 +1,17 @@
 #include "OpenGLContext.h"
-#include <glad/glad.h>
+
+// glad µ±Ç°Í·ÎÄ¼şÖĞÎ´¶¨Òå»ìºÏÏà¹Ø³£Á¿ºÍº¯Êı£¬ÕâÀï×ö×îĞ¡ÉùÃ÷£¬±ÜÃâ°üº¬ÏµÍ³ gl.h ´øÀ´µÄ´óÁ¿ÖØ¸´ÉùÃ÷ warning
+#ifndef GL_BLEND
+#define GL_BLEND 0x0BE2
+#endif
+#ifndef GL_SRC_ALPHA
+#define GL_SRC_ALPHA 0x0302
+#endif
+#ifndef GL_ONE_MINUS_SRC_ALPHA
+#define GL_ONE_MINUS_SRC_ALPHA 0x0303
+#endif
+
+extern "C" void APIENTRY glBlendFunc(GLenum sfactor, GLenum dfactor);
 
 namespace SoulsEngine {
 
@@ -21,7 +33,11 @@ void OpenGLContext::ConfigureState() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    // è®¾ç½®æ¸…é™¤é¢œè‰²ï¼ˆæ·±ç°è‰²èƒŒæ™¯ï¼‰
+    // ÆôÓÃ Alpha »ìºÏ£¬ÓÃÓÚ²£Á§µÈÍ¸Ã÷²ÄÖÊ
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // è®¾ç½®æ¸…é™¤é¢œè‰²ï¼ˆæ·±ç°è‰²èƒŒæ™¯ï¼?
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 }
 

@@ -48,7 +48,7 @@ ImGuiSystem::~ImGuiSystem() {
 bool ImGuiSystem::Initialize(GLFWwindow* window) {
     m_window = window;
 
-    // 设置 ImGui 上下文
+
     IMGUI_CHECKVERSION();
     m_context = ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -57,18 +57,18 @@ bool ImGuiSystem::Initialize(GLFWwindow* window) {
 
     ImGui::StyleColorsDark();
 
-    // 中文字体范围
+    // 中文字符范围
     static const ImWchar ranges[] = {
-        0x0020, 0x00FF, // 基本拉丁
-        0x0100, 0x017F, // 拉丁扩展
-        0x3000, 0x303F, // CJK 符号
-        0x3040, 0x30FF, // 假名
-        0x4E00, 0x9FFF, // 常用汉字
-        0xFF00, 0xFFEF, // 全角
+        0x0020, 0x00FF, // 基本拉丁字符
+        0x0100, 0x017F, // 拉丁扩展字符
+        0x3000, 0x303F, // CJK 符号和标点
+        0x3040, 0x30FF, // 日文平假名
+        0x4E00, 0x9FFF, // 中文汉字
+        0xFF00, 0xFFEF, // 全角字符
         0,
     };
 
-    // 尝试加载系统字体
+
     const char* fontPaths[] = {
         "C:/Windows/Fonts/msyh.ttc",
         "C:/Windows/Fonts/simsun.ttc",
@@ -95,11 +95,11 @@ bool ImGuiSystem::Initialize(GLFWwindow* window) {
         io.Fonts->AddFontDefault();
     }
 
-    // 初始化平台 / 渲染器绑定
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    // 触发字体纹理生成
+
     unsigned char* pixels;
     int width;
     int height;
@@ -133,8 +133,8 @@ void ImGuiSystem::InitMaterialPresets() {
     m_materialPresets.push_back(Material::CreateEmerald());
     m_materialPresets.push_back(Material::CreateJade());
     m_materialPresets.push_back(Material::CreateRuby());
-    m_materialPresets.push_back(Material::CreateGold());
-    m_materialPresets.push_back(Material::CreateSilver());
+    m_materialPresets.push_back(Material::CreateGlass());
+    m_materialPresets.push_back(Material::CreateMetal());
 }
 
 void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
@@ -149,7 +149,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
     ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(200, viewport->Size.y), ImGuiCond_Always);
 
-    ImGui::Begin("游戏引擎工具栏", nullptr,
+    ImGui::Begin("Souls 工具栏", nullptr,
                  ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoCollapse |
@@ -161,8 +161,8 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
 
     static int geometryCounter = 0;
 
-    // 1. 生成几何体
-    if (ImGui::CollapsingHeader("1. 生成几何体", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+    if (ImGui::CollapsingHeader("1. 预设几何体", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Indent();
 
         if (ImGui::Button("立方体", ImVec2(-1, 0))) {
@@ -205,7 +205,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
             selectionSystem->SelectNode(node);
         }
 
-        if (ImGui::Button("棱柱", ImVec2(-1, 0))) {
+        if (ImGui::Button("棱柱体", ImVec2(-1, 0))) {
             auto mesh = std::make_shared<Prism>(6, 0.7f, 1.5f, glm::vec3(1.0f, 0.0f, 1.0f));
             auto name = "Prism_" + std::to_string(geometryCounter++);
             auto node = objectManager->CreateNode(name, mesh);
@@ -215,7 +215,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
             selectionSystem->SelectNode(node);
         }
 
-        if (ImGui::Button("棱台", ImVec2(-1, 0))) {
+        if (ImGui::Button("棱台体", ImVec2(-1, 0))) {
             auto mesh = std::make_shared<Frustum>(6, 0.4f, 0.7f, 1.5f, glm::vec3(0.0f, 1.0f, 1.0f));
             auto name = "Frustum_" + std::to_string(geometryCounter++);
             auto node = objectManager->CreateNode(name, mesh);
@@ -245,12 +245,12 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
         auto selectedNode = selectionSystem->GetSelectedNode();
         if (!selectedNode) {
             ImGui::Indent();
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "请先选择对象");
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "请先选择物体");
             ImGui::Unindent();
         } else {
             ImGui::Indent();
             auto currentMat = selectedNode->GetMaterial();
-            ImGui::Text("当前材质: %s", currentMat ? currentMat->GetName().c_str() : "无");
+            ImGui::Text("当前材质: %s", currentMat ? currentMat->GetName().c_str() : "无材质");
             if (currentMat) {
                 if (ImGui::SmallButton("移除材质")) {
                     selectedNode->SetMaterial(nullptr);
@@ -258,7 +258,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
             }
 
             ImGui::Spacing();
-            ImGui::Text("预设材质:");
+            ImGui::Text("棰勮鏉愯川:");
 
             for (size_t i = 0; i < m_materialPresets.size(); ++i) {
                 const auto& preset = m_materialPresets[i];
@@ -283,11 +283,11 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
 
     ImGui::Spacing();
 
-    // 4. 添加灯光
-    if (ImGui::CollapsingHeader("4. 添加灯光", ImGuiTreeNodeFlags_None)) {
+    // 4. 添加光源
+    if (ImGui::CollapsingHeader("4. 添加光源", ImGuiTreeNodeFlags_None)) {
         ImGui::Indent();
 
-        ImGui::Text("光照张角: %.1f°", m_lightAngle);
+        ImGui::Text("光照角度: %.1f", m_lightAngle);
         ImGui::SliderFloat("##LightAngle", &m_lightAngle, 0.0f, 360.0f, "%.1f");
 
         ImGui::Text("光照强度: %.2f", m_lightIntensity);
@@ -320,9 +320,9 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
                 glm::vec3 pos = light->GetPosition();
                 ImGui::Text("  位置: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
                 ImGui::Text("  强度: %.2f", light->GetIntensity());
-                ImGui::Text("  张角: %.1f°", light->GetAngle());
+                ImGui::Text("  角度: %.1f", light->GetAngle());
 
-                // 实时同步当前滑块的值
+
                 light->SetIntensity(m_lightIntensity);
                 light->SetAngle(m_lightAngle);
 
@@ -349,11 +349,11 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
     ImGui::Spacing();
     ImGui::Separator();
 
-    // 选中对象信息
+    // 选中物体信息
     auto selectedNode = selectionSystem->GetSelectedNode();
     if (selectedNode) {
         ImGui::Spacing();
-        ImGui::Text("选中对象:");
+        ImGui::Text("选中物体:");
         ImGui::Text("%s", selectedNode->GetName().c_str());
 
         glm::vec3 pos = selectedNode->GetPosition();
@@ -366,7 +366,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
         ImGui::Text("缩放: (%.2f, %.2f, %.2f)", scale.x, scale.y, scale.z);
     } else {
         ImGui::Spacing();
-        ImGui::Text("未选中对象");
+        ImGui::Text("未选中物体");
     }
 
     ImGui::End();
