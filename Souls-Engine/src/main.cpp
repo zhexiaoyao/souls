@@ -20,6 +20,7 @@
 #include "geometry/Cone.h"
 #include "geometry/Prism.h"
 #include "geometry/Frustum.h"
+#include "geometry/GridPlane.h"
 #include "geometry/Mesh.h"
 #include <GLFW/glfw3.h>
 #include <imgui.h> // ImGui 头文件（用于调试界面）
@@ -152,6 +153,13 @@ int main() {
     SoulsEngine::ObjectManager objectManager;
     std::cout << "Object Manager created" << std::endl;
 
+    // 默认环境：黑白棋盘格地平面
+    {
+        auto gridMesh = std::make_shared<SoulsEngine::GridPlane>(40.0f, 40);
+        auto gridNode = objectManager.CreateNode("Ground", gridMesh);
+        gridNode->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    }
+
     // 创建相机????
     SoulsEngine::SelectionSystem selectionSystem;
     std::cout << "Selection System created" << std::endl;
@@ -160,6 +168,20 @@ int main() {
     SoulsEngine::LightManager lightManager;
     std::cout << "Light Manager created" << std::endl;
 
+    // 默认环境光源：在场景中心上方放置一个点光源，便于展示地面与物体
+    {
+        glm::vec3 defaultLightPos(0.0f, 5.0f, 0.0f);
+        glm::vec3 defaultLightColor(1.0f, 1.0f, 1.0f);
+        float defaultLightIntensity = 3.0f;
+        float defaultLightAngle = 360.0f;
+        auto defaultLight = lightManager.AddLight(defaultLightPos, defaultLightColor, defaultLightIntensity, defaultLightAngle);
+
+        // 创建指示器球体，便于在场景中看到光源位置
+        auto lightIndicatorMesh = std::make_shared<SoulsEngine::Sphere>(0.2f, 16, 8, glm::vec3(1.0f, 1.0f, 0.0f));
+        auto indicatorName = "LightIndicator_" + defaultLight->GetName();
+        auto indicatorNode = objectManager.CreateNode(indicatorName, lightIndicatorMesh);
+        indicatorNode->SetPosition(defaultLightPos);
+    }
     // 渲染ImGui界面
     SoulsEngine::ImGuiSystem imguiSystem;
     if (!imguiSystem.Initialize(window.GetGLFWWindow())) {

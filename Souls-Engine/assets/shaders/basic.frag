@@ -43,8 +43,11 @@ void main()
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
         vec3 specular = material.specular * spec * lightColor;
         
-        // 最终颜�? = 环境�? + 漫反�? + 镜面反射
+        // 最终颜色 = 环境 + 漫反射 + 镜面反射
         vec3 result = ambient + diffuse + specular;
+        // 将顶点颜色作为基色（用于棋盘格等顶点着色物体），
+        // 这样黑白格子将不会被光照抹成纯灰色
+        result *= Color;
         FragColor = vec4(result, material.alpha);
     }
 }

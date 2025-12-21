@@ -277,33 +277,6 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
                 ImGui::PopID();
             }
 
-            ImGui::Spacing();
-            ImGui::Separator();
-            // 表面类型选择（哑光 / 光滑）
-            ImGui::Text("表面类型:");
-            // 0=默认, 1=哑光(粗糙), 2=光滑(光泽)
-            static int surfaceType = 0;
-            int prevSurfaceType = surfaceType;
-            ImGui::RadioButton("默认", &surfaceType, 0); ImGui::SameLine();
-            ImGui::RadioButton("哑光 (粗糙)", &surfaceType, 1); ImGui::SameLine();
-            ImGui::RadioButton("光滑 (光泽)", &surfaceType, 2);
-            // 当选择发生变化时，立即应用到当前选中物体的材质（通过修改 shininess）
-            if (surfaceType != prevSurfaceType) {
-                auto mat = selectedNode->GetMaterial();
-                if (mat) {
-                    if (surfaceType == 1) {
-                        // 哑光：较低的 shininess 值
-                        mat->SetShininess(8.0f);
-                    } else if (surfaceType == 2) {
-                        // 光滑：较高的 shininess 值
-                        mat->SetShininess(128.0f);
-                    } else {
-                        // 默认值（项目中默认为32）
-                        mat->SetShininess(32.0f);
-                    }
-                }
-            }
-
             ImGui::Unindent();
         }
     }

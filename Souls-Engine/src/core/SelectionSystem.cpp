@@ -348,6 +348,9 @@ std::shared_ptr<SceneNode> SelectionSystem::PickNode(const glm::vec2& screenPos,
     for (auto& node : nodes) {
         if (!node) continue;
         
+        // 跳过不可选的地面节点（例如名称为 "Ground" 的默认环境），防止被鼠标选中或移动
+        if (node->GetName() == "Ground") continue;
+        
         // 鑾峰彇鑺傜偣鐨勪笘鐣屽彉鎹㈢煩闃?
         glm::mat4 worldTransform = node->GetWorldTransform();
         

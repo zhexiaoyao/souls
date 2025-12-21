@@ -79,6 +79,7 @@ set(SOURCES
     src/geometry/Cone.cpp
     src/geometry/Prism.cpp
     src/geometry/Frustum.cpp
+    src/geometry/GridPlane.cpp
 )
 
 # 创建可执行文�?
