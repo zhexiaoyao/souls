@@ -52,6 +52,8 @@ private:
     bool m_showMaterialMenu;
     bool m_showLightMenu;
     bool m_showModelMenu;
+    // 已导入模型名称列表（用于左侧模块显示）
+    std::vector<std::string> m_importedModelNames;
 
     // ??????
     float m_lightAngle;      // ????????0-360????

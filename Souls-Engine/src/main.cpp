@@ -22,6 +22,8 @@
 #include "geometry/Frustum.h"
 #include "geometry/GridPlane.h"
 #include "geometry/Mesh.h"
+#include "io/AssimpLoader.h"
+#include "io/OBJLoader.h"
 #include <GLFW/glfw3.h>
 #include <imgui.h> // ImGui 头文件（用于调试界面）
 #include <glm/glm.hpp>
@@ -40,7 +42,7 @@ bool FileExists(const std::string& path) {
     return file.good();
 }
 
-int main() {
+int main(int argc, char** argv) {
     // 交换缓冲区?UTF-8??indows??
     #ifdef _WIN32
     SetConsoleOutputCP(65001);
@@ -158,6 +160,41 @@ int main() {
         auto gridMesh = std::make_shared<SoulsEngine::GridPlane>(40.0f, 40);
         auto gridNode = objectManager.CreateNode("Ground", gridMesh);
         gridNode->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    }
+
+    // 如果传入了命令行参数，尝试加载指定模型文件（优先使用 AssimpLoader，如果可用）
+    if (argc > 1) {
+        std::string modelPath = argv[1];
+        std::unique_ptr<SoulsEngine::Mesh> importedMesh;
+        // 尝试使用 Assimp（如果启用）
+        importedMesh = SoulsEngine::LoadModelWithAssimp(modelPath);
+        if (!importedMesh) {
+            // 回退到 OBJ 加载
+            importedMesh = SoulsEngine::LoadOBJFromFile(modelPath);
+        }
+        if (importedMesh) {
+            // 将 unique_ptr 转为 shared_ptr（安全地释放 unique_ptr 的所有权）
+            std::shared_ptr<SoulsEngine::Mesh> meshShared;
+            meshShared.reset(importedMesh.release());
+            auto node = objectManager.CreateNode("ImportedModel", meshShared);
+            node->SetPosition(glm::vec3(0.0f, 0.5f, 0.0f));
+            std::cout << "Imported model: " << modelPath << std::endl;
+        } else {
+            std::cout << "Failed to import model: " << modelPath << std::endl;
+        }
+    } else {
+        // 如果没有提供参数，尝试加载内置示例模型（assets/models/examples/triangle.obj）
+        const std::string examplePath = "assets/models/examples/triangle.obj";
+        if (FileExists(examplePath)) {
+            auto mesh = SoulsEngine::LoadOBJFromFile(examplePath);
+            if (mesh) {
+                std::shared_ptr<SoulsEngine::Mesh> meshShared;
+                meshShared.reset(mesh.release());
+                auto node = objectManager.CreateNode("ExampleTriangle", meshShared);
+                node->SetPosition(glm::vec3(0.0f, 0.5f, 0.0f));
+                std::cout << "Loaded example model: " << examplePath << std::endl;
+            }
+        }
     }
 
     // 创建相机????

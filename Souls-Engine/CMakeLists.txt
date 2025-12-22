@@ -80,7 +80,15 @@ set(SOURCES
     src/geometry/Prism.cpp
     src/geometry/Frustum.cpp
     src/geometry/GridPlane.cpp
+    src/io/OBJLoader.cpp
+    src/io/AssimpLoader.cpp
 )
+
+# 可选：尝试查找 Assimp，用于在构建时决定是否链接 assimp 和启用加载器功能
+find_package(assimp CONFIG QUIET)
+if(assimp_FOUND)
+    message(STATUS "Assimp found; enabling AssimpLoader")
+endif()
 
 # 创建可执行文�?
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -100,9 +108,17 @@ target_link_libraries(${PROJECT_NAME}
     ${CMAKE_DL_LIBS}  # 包含GLAD的动态链�?
 )
 
+# 如果找到了 assimp，则在目标上启用编译宏并链接 assimp（可选）
+if(assimp_FOUND)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_ASSIMP)
+    target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
+endif()
+
 # Windows下暂时支持\penGL，忝证链接到opengl32
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} opengl32)
+    # Windows file dialog API requires comdlg32
+    target_link_libraries(${PROJECT_NAME} comdlg32)
 else()
     # 其它屏幕系统链接到bL
     find_package(OpenGL REQUIRED)

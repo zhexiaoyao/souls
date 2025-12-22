@@ -25,6 +25,10 @@ public:
     // 获取顶点数量
     size_t GetVertexCount() const { return m_vertexCount; }
 
+    // 使用 float 数组初始化网格（每顶点 6 个 float：位置(3) + 颜色(3)）
+    // 该方法用于从导入器（例如 OBJ 导入）创建 Mesh
+    void InitFromFloatVertices(const std::vector<float>& vertices);
+
 protected:
     GLuint m_VAO;              // 顶点数组对象
     GLuint m_VBO;              // 顶点缓冲对象

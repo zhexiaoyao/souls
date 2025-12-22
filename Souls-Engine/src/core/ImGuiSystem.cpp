@@ -26,6 +26,12 @@
 #include <imgui_impl_opengl3.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include <windows.h>
+#include <commdlg.h>
+#include "../io/AssimpLoader.h"
+#include "../io/OBJLoader.h"
 
 namespace SoulsEngine {
 
@@ -159,6 +165,8 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
     ImGui::Separator();
     ImGui::Spacing();
 
+    // （模块占位，实际“导入外部模型”面板将放在第2项）
+
     static int geometryCounter = 0;
 
 
@@ -230,11 +238,67 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
 
     ImGui::Spacing();
 
-    // 2. 生成特定模型（占位）
-    if (ImGui::CollapsingHeader("2. 生成特定模型", ImGuiTreeNodeFlags_None)) {
+    // 2. 导入外部模型（将导入面板移动到这里）
+    if (ImGui::CollapsingHeader("2. 导入外部模型", ImGuiTreeNodeFlags_None)) {
         ImGui::Indent();
-        ImGui::Text("功能开发中...");
-        ImGui::Text("敬请期待");
+        if (ImGui::Button("导入外部模型##import_btn2", ImVec2(-1, 0))) {
+            CHAR szFile[MAX_PATH] = {0};
+            OPENFILENAMEA ofn;
+            ZeroMemory(&ofn, sizeof(ofn));
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = glfwGetWin32Window(m_window);
+            ofn.lpstrFile = szFile;
+            ofn.nMaxFile = MAX_PATH;
+            ofn.lpstrFilter = "Model Files\0*.obj;*.blend;*.gltf;*.glb;*.fbx\0All Files\0*.*\0";
+            ofn.nFilterIndex = 1;
+            ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+            if (GetOpenFileNameA(&ofn)) {
+                std::string path(szFile);
+                std::unique_ptr<SoulsEngine::Mesh> importedMesh = SoulsEngine::LoadModelWithAssimp(path);
+                if (!importedMesh) {
+                    importedMesh = SoulsEngine::LoadOBJFromFile(path);
+                }
+                if (importedMesh) {
+                    std::string filename = path.substr(path.find_last_of("/\\") + 1);
+                    std::string nodeName = "Imported_" + filename;
+                    std::shared_ptr<SoulsEngine::Mesh> meshShared;
+                    meshShared.reset(importedMesh.release());
+                    auto node = objectManager->CreateNode(nodeName, meshShared);
+                    glm::vec3 camPos = nullptr != camera ? camera->GetPosition() : glm::vec3(0.0f, 0.0f, 5.0f);
+                    glm::vec3 camFront = nullptr != camera ? camera->GetFront() : glm::vec3(0.0f, 0.0f, -1.0f);
+                    node->SetPosition(camPos + camFront * 5.0f);
+                    selectionSystem->SelectNode(node);
+                    m_importedModelNames.push_back(nodeName);
+                }
+            }
+        }
+
+        if (m_importedModelNames.empty()) {
+            ImGui::Text("当前无导入模型");
+        } else {
+            ImGui::Separator();
+            ImGui::Text("已导入模型:");
+            for (size_t i = 0; i < m_importedModelNames.size(); ++i) {
+                ImGui::PushID(static_cast<int>(i));
+                ImGui::Text("%s", m_importedModelNames[i].c_str());
+                ImGui::SameLine();
+                if (ImGui::SmallButton(("选中##import_sel" + std::to_string(i)).c_str())) {
+                    auto node = objectManager->FindNode(m_importedModelNames[i]);
+                    if (node) selectionSystem->SelectNode(node);
+                }
+                ImGui::SameLine();
+                if (ImGui::SmallButton(("删除##import_del" + std::to_string(i)).c_str())) {
+                    auto node = objectManager->FindNode(m_importedModelNames[i]);
+                    if (node) objectManager->RemoveNode(node);
+                    m_importedModelNames.erase(m_importedModelNames.begin() + i);
+                    ImGui::PopID();
+                    break;
+                }
+                ImGui::PopID();
+            }
+        }
+
         ImGui::Unindent();
     }
 
