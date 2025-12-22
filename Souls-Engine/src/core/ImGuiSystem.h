@@ -54,6 +54,8 @@ private:
     bool m_showModelMenu;
     // 已导入模型名称列表（用于左侧模块显示）
     std::vector<std::string> m_importedModelNames;
+    // 左侧工具栏宽度（可调整）
+    float m_toolbarWidth;
 
     // ??????
     float m_lightAngle;      // ????????0-360????

@@ -43,7 +43,8 @@ ImGuiSystem::ImGuiSystem()
     , m_showLightMenu(false)
     , m_showModelMenu(false)
     , m_lightAngle(45.0f)
-    , m_lightIntensity(1.0f) {
+    , m_lightIntensity(1.0f)
+    , m_toolbarWidth(200.0f) {
     InitMaterialPresets();
 }
 
@@ -153,13 +154,15 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
     // 固定左侧工具栏
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(200, viewport->Size.y), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(m_toolbarWidth > 0.0f ? m_toolbarWidth : 200.0f, viewport->Size.y), ImGuiCond_Once);
 
     ImGui::Begin("Souls 工具栏", nullptr,
                  ImGuiWindowFlags_NoMove |
-                     ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoCollapse |
                      ImGuiWindowFlags_NoTitleBar);
+    // 记录当前窗口宽度，支持用户在运行时拖动调整
+    ImVec2 currentWinSize = ImGui::GetWindowSize();
+    m_toolbarWidth = currentWinSize.x;
 
     ImGui::Text("工具栏");
     ImGui::Separator();
