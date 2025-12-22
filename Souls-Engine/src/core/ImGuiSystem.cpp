@@ -166,7 +166,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
         ImGui::Indent();
 
         if (ImGui::Button("立方体", ImVec2(-1, 0))) {
-            auto mesh = std::make_shared<Cube>(1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+            auto mesh = std::make_shared<Cube>(1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
             auto name = "Cube_" + std::to_string(geometryCounter++);
             auto node = objectManager->CreateNode(name, mesh);
             glm::vec3 camPos = camera->GetPosition();
@@ -176,7 +176,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
         }
 
         if (ImGui::Button("球体", ImVec2(-1, 0))) {
-            auto mesh = std::make_shared<Sphere>(0.8f, 36, 18, glm::vec3(0.0f, 1.0f, 0.0f));
+            auto mesh = std::make_shared<Sphere>(0.8f, 36, 18, glm::vec3(1.0f, 1.0f, 1.0f));
             auto name = "Sphere_" + std::to_string(geometryCounter++);
             auto node = objectManager->CreateNode(name, mesh);
             glm::vec3 camPos = camera->GetPosition();
@@ -186,7 +186,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
         }
 
         if (ImGui::Button("圆柱体", ImVec2(-1, 0))) {
-            auto mesh = std::make_shared<Cylinder>(0.7f, 1.5f, 36, glm::vec3(0.0f, 0.0f, 1.0f));
+            auto mesh = std::make_shared<Cylinder>(0.7f, 1.5f, 36, glm::vec3(1.0f, 1.0f, 1.0f));
             auto name = "Cylinder_" + std::to_string(geometryCounter++);
             auto node = objectManager->CreateNode(name, mesh);
             glm::vec3 camPos = camera->GetPosition();
@@ -196,7 +196,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
         }
 
         if (ImGui::Button("圆锥体", ImVec2(-1, 0))) {
-            auto mesh = std::make_shared<Cone>(0.7f, 1.5f, 36, glm::vec3(1.0f, 1.0f, 0.0f));
+            auto mesh = std::make_shared<Cone>(0.7f, 1.5f, 36, glm::vec3(1.0f, 1.0f, 1.0f));
             auto name = "Cone_" + std::to_string(geometryCounter++);
             auto node = objectManager->CreateNode(name, mesh);
             glm::vec3 camPos = camera->GetPosition();
@@ -206,7 +206,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
         }
 
         if (ImGui::Button("棱柱体", ImVec2(-1, 0))) {
-            auto mesh = std::make_shared<Prism>(6, 0.7f, 1.5f, glm::vec3(1.0f, 0.0f, 1.0f));
+            auto mesh = std::make_shared<Prism>(6, 0.7f, 1.5f, glm::vec3(1.0f, 1.0f, 1.0f));
             auto name = "Prism_" + std::to_string(geometryCounter++);
             auto node = objectManager->CreateNode(name, mesh);
             glm::vec3 camPos = camera->GetPosition();
@@ -216,7 +216,7 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
         }
 
         if (ImGui::Button("棱台体", ImVec2(-1, 0))) {
-            auto mesh = std::make_shared<Frustum>(6, 0.4f, 0.7f, 1.5f, glm::vec3(0.0f, 1.0f, 1.0f));
+            auto mesh = std::make_shared<Frustum>(6, 0.4f, 0.7f, 1.5f, glm::vec3(1.0f, 1.0f, 1.0f));
             auto name = "Frustum_" + std::to_string(geometryCounter++);
             auto node = objectManager->CreateNode(name, mesh);
             glm::vec3 camPos = camera->GetPosition();
@@ -340,6 +340,79 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
                 if (i + 1 < lights.size()) {
                     ImGui::Spacing();
                 }
+            }
+        }
+
+        ImGui::Unindent();
+    }
+
+    ImGui::Spacing();
+    // --- 放置物体列表：可缩放、调色、删除 ---
+    ImGui::Spacing();
+    if (ImGui::CollapsingHeader("5. 已放置物体列表", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
+
+        auto nodes = objectManager->GetAllNodes();
+        if (nodes.empty()) {
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "当前无放置物体");
+        } else {
+            for (size_t i = 0; i < nodes.size(); ++i) {
+                auto node = nodes[i];
+                if (!node) continue;
+
+                // 跳过光源指示器（光源在光源面板中管理）以及地面 Ground（不可修改、不可显示）
+                std::string nodeName = node->GetName();
+                if (nodeName.rfind("LightIndicator_", 0) == 0) continue;
+                if (nodeName == "Ground") continue;
+
+                ImGui::PushID(static_cast<int>(i));
+
+                // 名称与操作按钮
+                ImGui::Text("%s", nodeName.c_str());
+                ImGui::SameLine();
+                if (ImGui::SmallButton("选中")) {
+                    selectionSystem->SelectNode(node);
+                }
+                ImGui::SameLine();
+                if (ImGui::SmallButton("删除")) {
+                    // 如果被选中，先取消选择
+                    if (selectionSystem->GetSelectedNode() && selectionSystem->GetSelectedNode()->GetName() == nodeName) {
+                        selectionSystem->Deselect();
+                    }
+                    objectManager->RemoveNode(node);
+                    ImGui::PopID();
+                    // 删除后继续下一个（当前 node 指针已移除）
+                    continue;
+                }
+
+                // 缩放控制
+                {
+                    glm::vec3 scale = node->GetScale();
+                    float scaleArr[3] = { scale.x, scale.y, scale.z };
+                    if (ImGui::DragFloat3("缩放", scaleArr, 0.01f, 0.1f, 10.0f)) {
+                        node->SetScale(glm::vec3(scaleArr[0], scaleArr[1], scaleArr[2]));
+                    }
+                }
+
+                // 颜色控制（通过材质的漫反射色）
+                {
+                    auto mat = node->GetMaterial();
+                    if (!mat) {
+                        // 如果没有材质，创建默认材质并绑定
+                        auto newMat = std::make_shared<Material>(Material::CreateDefault());
+                        node->SetMaterial(newMat);
+                        mat = newMat;
+                    }
+
+                    glm::vec3 diffuse = mat->GetDiffuse();
+                    float colorArr[3] = { diffuse.r, diffuse.g, diffuse.b };
+                    if (ImGui::ColorEdit3("颜色", colorArr)) {
+                        mat->SetColor(glm::vec3(colorArr[0], colorArr[1], colorArr[2]));
+                    }
+                }
+
+                ImGui::Separator();
+                ImGui::PopID();
             }
         }
 
