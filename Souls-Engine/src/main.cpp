@@ -1,6 +1,6 @@
-// ???????? GLFW ?????? GLAD?????? Windows gl.h ???
+// 注意：GLFW 必须在 GLAD 之后包含，避免 Windows gl.h 冲突
 #include <glad/glad.h>
-#define GLFW_INCLUDE_NONE  // ??? GLFW ??? OpenGL ?????
+#define GLFW_INCLUDE_NONE  // 确保 GLFW 不包含 OpenGL 头文件
 #include "core/Window.h"
 #include "core/OpenGLContext.h"
 #include "core/Shader.h"
@@ -9,13 +9,11 @@
 #include "core/SceneNode.h"
 #include "core/Node.h"
 #include "core/SelectionSystem.h"
-// ???????????
+// 交换缓冲区
 // #include "core/Material.h"
 #include "core/ImGuiSystem.h"
-#include "core/FragmentEffectManager.h"
 #include "core/Light.h"
 #include "core/LightManager.h"
-#include "core/ShadowMap.h"
 #include "geometry/Cube.h"
 #include "geometry/Sphere.h"
 #include "geometry/Cylinder.h"
@@ -27,7 +25,7 @@
 #include "io/AssimpLoader.h"
 #include "io/OBJLoader.h"
 #include <GLFW/glfw3.h>
-#include <imgui.h> // ?? ImGui ??????????
+#include <imgui.h> // ImGui 头文件（用于调试界面）
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -38,26 +36,26 @@
 #include <memory>
 #include <windows.h>
 
-// ??????????????????
+// 交换缓冲区???????
 bool FileExists(const std::string& path) {
     std::ifstream file(path);
     return file.good();
 }
 
 int main(int argc, char** argv) {
-    // ????????????UTF-8??indows??
+    // 交换缓冲区?UTF-8??indows??
     #ifdef _WIN32
     SetConsoleOutputCP(65001);
     #endif
 
     std::cout << "=== Souls Engine Starting ===" << std::endl;
     
-    // ??????????????indows??
+    // 交换缓冲区???indows??
     char buffer[256];
     GetCurrentDirectoryA(256, buffer);
     std::cout << "Current working directory: " << buffer << std::endl;
 
-    // ?????hader???????????????????????
+    // 创建相机hader???????????????????????
     std::vector<std::string> shaderPaths = {
         "assets/shaders/",
         "../assets/shaders/",
@@ -93,11 +91,11 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    // ??????
+    // 创建相机?
     SoulsEngine::Window window(1280, 720, "Souls Engine - Day 3-4: Basic Rendering System");
     std::cout << "Window created" << std::endl;
 
-    // ????????
+    // 创建相机???
     if (!window.Initialize()) {
         std::cerr << "ERROR: Failed to initialize window" << std::endl;
         std::cout << "Press Enter to exit..." << std::endl;
@@ -106,7 +104,7 @@ int main(int argc, char** argv) {
     }
     std::cout << "Window initialized successfully" << std::endl;
 
-    // ?????LAD??penGL?????
+    // 创建相机LAD??penGL?????
     if (!SoulsEngine::OpenGLContext::Initialize(window.GetGLFWWindow())) {
         std::cerr << "ERROR: Failed to initialize OpenGL context" << std::endl;
         window.Shutdown();
@@ -116,15 +114,15 @@ int main(int argc, char** argv) {
     }
     std::cout << "OpenGL context initialized successfully" << std::endl;
 
-    // ????????????
+    // 交换缓冲区?
     window.SetFramebufferSizeCallback([](GLFWwindow* win, int width, int height) {
         glViewport(0, 0, width, height);
     });
 
-    // ?????????
+    // 创建相机????
     glViewport(0, 0, window.GetWidth(), window.GetHeight());
 
-    // ???Shader
+    // 使用Shader
     SoulsEngine::Shader shader;
     std::cout << "Loading shaders from: " << vertexPath << " and " << fragmentPath << std::endl;
     if (!shader.LoadFromFiles(vertexPath, fragmentPath)) {
@@ -136,13 +134,13 @@ int main(int argc, char** argv) {
     }
     std::cout << "Shaders loaded and compiled successfully!" << std::endl;
 
-    // ??????
+    // 创建相机?
     SoulsEngine::Camera camera(glm::vec3(0.0f, 2.0f, 8.0f));
     float aspectRatio = static_cast<float>(window.GetWidth()) / static_cast<float>(window.GetHeight());
     
-    // ????????????????????????
+    // 交换缓冲区?????????????
     glfwSetScrollCallback(window.GetGLFWWindow(), [](GLFWwindow* w, double xoffset, double yoffset) {
-        // ??????????????????
+        // 交换缓冲区???????
         void* userPtr = glfwGetWindowUserPointer(w);
         if (userPtr) {
             SoulsEngine::Camera* cam = static_cast<SoulsEngine::Camera*>(userPtr);
@@ -150,10 +148,10 @@ int main(int argc, char** argv) {
         }
     });
     
-    // ????????????????????????????????????
+    // 交换缓冲区?????????????????????????
     glfwSetWindowUserPointer(window.GetGLFWWindow(), &camera);
 
-    // ?????????????????????
+    // 交换缓冲区??????????
     SoulsEngine::ObjectManager objectManager;
     std::cout << "Object Manager created" << std::endl;
 
@@ -199,11 +197,11 @@ int main(int argc, char** argv) {
         }
     }
 
-    // ?????????
+    // 创建相机????
     SoulsEngine::SelectionSystem selectionSystem;
     std::cout << "Selection System created" << std::endl;
 
-    // ???????????
+    // 交换缓冲区
     SoulsEngine::LightManager lightManager;
     std::cout << "Light Manager created" << std::endl;
 
@@ -215,55 +213,13 @@ int main(int argc, char** argv) {
         float defaultLightAngle = 360.0f;
         auto defaultLight = lightManager.AddLight(defaultLightPos, defaultLightColor, defaultLightIntensity, defaultLightAngle);
 
-        // 创建太阳球体（橙红色），便于在场景中看到光源位置
-        glm::vec3 sunColor(1.0f, 0.5f, 0.0f);  // 橙红色 (RGB: 255, 128, 0)
-        auto sunMesh = std::make_shared<SoulsEngine::Sphere>(0.6f, 32, 16, sunColor);  // 较大的球体（半径0.6）作为太阳
-        auto sunName = "Sun_" + defaultLight->GetName();
-        auto sunNode = objectManager.CreateNode(sunName, sunMesh);
-        sunNode->SetPosition(defaultLightPos);
-        
-        // 保留原有的黄色指示器球体（较小，用于精确定位）
+        // 创建指示器球体，便于在场景中看到光源位置
         auto lightIndicatorMesh = std::make_shared<SoulsEngine::Sphere>(0.2f, 16, 8, glm::vec3(1.0f, 1.0f, 0.0f));
         auto indicatorName = "LightIndicator_" + defaultLight->GetName();
         auto indicatorNode = objectManager.CreateNode(indicatorName, lightIndicatorMesh);
         indicatorNode->SetPosition(defaultLightPos);
     }
-
-    // 创建阴影映射
-    SoulsEngine::ShadowMap shadowMap(2048, 2048);
-    if (!shadowMap.Initialize()) {
-        std::cerr << "ERROR: Failed to initialize shadow map!" << std::endl;
-    } else {
-        std::cout << "Shadow Map initialized successfully!" << std::endl;
-    }
-
-    // 创建深度着色器（用于生成阴影贴图）
-    SoulsEngine::Shader depthShader;
-    std::vector<std::string> depthShaderPaths = {
-        "assets/shaders/",
-        "../assets/shaders/",
-        "../../assets/shaders/",
-        "../../../assets/shaders/",
-        "build/bin/Debug/assets/shaders/",
-        "build/bin/Release/assets/shaders/"
-    };
-    std::string depthVertPath, depthFragPath;
-    bool depthShaderFound = false;
-    for (const auto& basePath : depthShaderPaths) {
-        depthVertPath = basePath + "depth.vert";
-        depthFragPath = basePath + "depth.frag";
-        if (FileExists(depthVertPath) && FileExists(depthFragPath)) {
-            depthShaderFound = true;
-            break;
-        }
-    }
-    if (depthShaderFound && depthShader.LoadFromFiles(depthVertPath, depthFragPath)) {
-        std::cout << "Depth shader loaded successfully!" << std::endl;
-    } else {
-        std::cerr << "Warning: Depth shader not found, shadows will be disabled" << std::endl;
-    }
-
-    // ???ImGui???
+    // 渲染ImGui界面
     SoulsEngine::ImGuiSystem imguiSystem;
     if (!imguiSystem.Initialize(window.GetGLFWWindow())) {
         std::cerr << "Failed to initialize ImGui" << std::endl;
@@ -273,11 +229,7 @@ int main(int argc, char** argv) {
     }
     std::cout << "ImGui System initialized" << std::endl;
 
-    // 创建碎裂效果管理器
-    SoulsEngine::FragmentEffectManager fragmentEffectManager(&objectManager);
-    std::cout << "Fragment Effect Manager created" << std::endl;
-
-    // ??????????????????
+    // 交换缓冲区???????
     int geometryCounter = 0;
 
     std::cout << "Souls Engine initialized successfully!" << std::endl;
@@ -322,20 +274,17 @@ int main(int argc, char** argv) {
     std::cout << "  - Mouse Wheel: Zoom in/out" << std::endl;
     std::cout << "  - R: Toggle rotation mode" << std::endl;
     
-    // ??????
+    // 创建相机?
     float lastTime = 0.0f;
     
-    // ????????
+    // 创建相机???
     while (!window.ShouldClose()) {
-        // ???deltaTime
+        // 黄色deltaTime
         float currentTime = static_cast<float>(glfwGetTime());
         float deltaTime = currentTime - lastTime;
         lastTime = currentTime;
 
-        // 更新碎裂效果
-        fragmentEffectManager.Update(deltaTime);
-
-        // ?????????
+        // 创建相机????
         window.PollEvents();
 
         // ESC??????
@@ -343,7 +292,7 @@ int main(int argc, char** argv) {
             glfwSetWindowShouldClose(window.GetGLFWWindow(), true);
         }
 
-        // ????????ASD + QE??
+        // 创建相机???ASD + QE??
         if (glfwGetKey(window.GetGLFWWindow(), GLFW_KEY_W) == GLFW_PRESS)
             camera.ProcessKeyboard(SoulsEngine::Camera::FORWARD, deltaTime);
         if (glfwGetKey(window.GetGLFWWindow(), GLFW_KEY_S) == GLFW_PRESS)
@@ -357,13 +306,13 @@ int main(int argc, char** argv) {
         if (glfwGetKey(window.GetGLFWWindow(), GLFW_KEY_E) == GLFW_PRESS)
             camera.ProcessKeyboard(SoulsEngine::Camera::UP, deltaTime);
 
-        // ??????????????????1-6??
+        // 交换缓冲区???????1-6??
         static bool keyPressed[6] = { false, false, false, false, false, false };
         for (int i = 0; i < 6; ++i) {
             int key = GLFW_KEY_1 + i;
             bool isPressed = glfwGetKey(window.GetGLFWWindow(), key) == GLFW_PRESS;
             if (isPressed && !keyPressed[i]) {
-                // ?????????????????
+                // 交换缓冲区??????
                 std::shared_ptr<SoulsEngine::SceneNode> newNode;
                 std::string name;
                 glm::vec3 color;
@@ -373,7 +322,7 @@ int main(int argc, char** argv) {
                         auto mesh = std::make_shared<SoulsEngine::Cube>(1.0f, glm::vec3(1.0f, 0.0f, 0.0f));
                         name = "Cube_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
-                        // ??????????????????????????
+                        // 交换缓冲区???????????????
                         // auto material = std::make_shared<SoulsEngine::Material>();
                         // material->SetColor(1.0f, 0.0f, 0.0f);
                         // material->SetSpecular(0.5f, 0.5f, 0.5f);
@@ -386,7 +335,7 @@ int main(int argc, char** argv) {
                         auto mesh = std::make_shared<SoulsEngine::Sphere>(0.8f, 36, 18, glm::vec3(0.0f, 1.0f, 0.0f));
                         name = "Sphere_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
-                        // ??????????????????????????
+                        // 交换缓冲区???????????????
                         // auto material = std::make_shared<SoulsEngine::Material>(SoulsEngine::Material::CreateEmerald());
                         // newNode->SetMaterial(material);
                         break;
@@ -395,7 +344,7 @@ int main(int argc, char** argv) {
                         auto mesh = std::make_shared<SoulsEngine::Cylinder>(0.7f, 1.5f, 36, glm::vec3(0.0f, 0.0f, 1.0f));
                         name = "Cylinder_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
-                        // ??????????????????????????
+                        // 交换缓冲区???????????????
                         // auto material = std::make_shared<SoulsEngine::Material>();
                         // material->SetColor(0.0f, 0.0f, 1.0f);
                         // material->SetSpecular(0.7f, 0.7f, 0.7f);
@@ -408,7 +357,7 @@ int main(int argc, char** argv) {
                         auto mesh = std::make_shared<SoulsEngine::Cone>(0.7f, 1.5f, 36, glm::vec3(1.0f, 1.0f, 0.0f));
                         name = "Cone_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
-                        // ??????????????????????????
+                        // 交换缓冲区???????????????
                         // auto material = std::make_shared<SoulsEngine::Material>(SoulsEngine::Material::CreateGold());
                         // newNode->SetMaterial(material);
                         break;
@@ -417,7 +366,7 @@ int main(int argc, char** argv) {
                         auto mesh = std::make_shared<SoulsEngine::Prism>(6, 0.7f, 1.5f, glm::vec3(1.0f, 0.0f, 1.0f));
                         name = "Prism_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
-                        // ??????????????????????????
+                        // 交换缓冲区???????????????
                         // auto material = std::make_shared<SoulsEngine::Material>();
                         // material->SetColor(1.0f, 0.0f, 1.0f);
                         // material->SetSpecular(0.8f, 0.8f, 0.8f);
@@ -430,7 +379,7 @@ int main(int argc, char** argv) {
                         auto mesh = std::make_shared<SoulsEngine::Frustum>(6, 0.4f, 0.7f, 1.5f, glm::vec3(0.0f, 1.0f, 1.0f));
                         name = "Frustum_" + std::to_string(geometryCounter++);
                         newNode = objectManager.CreateNode(name, mesh);
-                        // ??????????????????????????
+                        // 交换缓冲区???????????????
                         // auto material = std::make_shared<SoulsEngine::Material>(SoulsEngine::Material::CreateJade());
                         // newNode->SetMaterial(material);
                         break;
@@ -438,7 +387,7 @@ int main(int argc, char** argv) {
                 }
                 
                 if (newNode) {
-                    // ??????????????
+                    // 交换缓冲区???
                     glm::vec3 cameraPos = camera.GetPosition();
                     glm::vec3 cameraFront = camera.GetFront();
                     newNode->SetPosition(cameraPos + cameraFront * 5.0f);
@@ -449,7 +398,7 @@ int main(int argc, char** argv) {
             keyPressed[i] = isPressed;
         }
 
-        // R????????????
+        // R键切换旋转模式
         static bool rKeyPressed = false;
         bool rKeyDown = glfwGetKey(window.GetGLFWWindow(), GLFW_KEY_R) == GLFW_PRESS;
         if (rKeyDown && !rKeyPressed) {
@@ -458,39 +407,39 @@ int main(int argc, char** argv) {
         }
         rKeyPressed = rKeyDown;
 
-        // ?????????
+        // 创建相机????
         double mouseX, mouseY;
         glfwGetCursorPos(window.GetGLFWWindow(), &mouseX, &mouseY);
         glm::vec2 mousePos(static_cast<float>(mouseX), static_cast<float>(mouseY));
         
-        // ????????????[0, 1]
+        // 交换缓冲区?[0, 1]
         glm::vec2 normalizedMousePos(
             mousePos.x / static_cast<float>(window.GetWidth()),
             mousePos.y / static_cast<float>(window.GetHeight())
         );
 
-        // ?????????????????
+        // 交换缓冲区??????
         static bool leftMousePressed = false;
         static double lastClickTime = 0.0;
         static glm::vec2 lastClickPos(0.0f, 0.0f);
-        const double DOUBLE_CLICK_TIME = 0.3; // ??????????????
-        const float DOUBLE_CLICK_DISTANCE = 0.01f; // ?????????
+        const double DOUBLE_CLICK_TIME = 0.3; // 交换缓冲区???
+        const float DOUBLE_CLICK_DISTANCE = 0.01f; // 创建相机????
         
         bool leftMouseDown = glfwGetMouseButton(window.GetGLFWWindow(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-        double clickTime = static_cast<double>(currentTime); // ?????????currentTime???
-        bool imguiWantsMouse = ImGui::GetIO().WantCaptureMouse; // ImGui?????????
+        double clickTime = static_cast<double>(currentTime); // 创建相机????currentTime???
+        bool imguiWantsMouse = ImGui::GetIO().WantCaptureMouse; // ImGui渲染完成
         
-        // ????????????????????????????????????????????
+        // 交换缓冲区?????????????????????????????????
         static float cameraRotateLastMouseX = -1.0f;
         static float cameraRotateLastMouseY = -1.0f;
         
         if (!imguiWantsMouse && leftMouseDown && !leftMousePressed) {
-            // ????????
+            // 创建相机???
             auto allNodes = objectManager.GetAllNodes();
             auto pickedNode = selectionSystem.PickNode(normalizedMousePos, camera, allNodes, 
                                                        window.GetWidth(), window.GetHeight());
             
-            // ???????
+            // 创建相机??
             bool isDoubleClick = false;
             if (pickedNode && pickedNode == selectionSystem.GetSelectedNode()) {
                 double timeSinceLastClick = clickTime - lastClickTime;
@@ -501,17 +450,17 @@ int main(int argc, char** argv) {
             }
             
             if (isDoubleClick) {
-                // ??????????????
+                // 交换缓冲区???
                 selectionSystem.StartScale(normalizedMousePos, camera, aspectRatio);
                 std::cout << "Scale mode activated for: " << pickedNode->GetName() << std::endl;
             } else {
-                // ???????????
+                // 交换缓冲区
                 if (pickedNode) {
                     selectionSystem.SelectNode(pickedNode);
                     selectionSystem.StartDrag(normalizedMousePos, camera);
                     std::cout << "Selected: " << pickedNode->GetName() << std::endl;
                 } else {
-                    // ??????????????????????????????????????????????
+                    // 交换缓冲区???????????????????????????????????
                     auto previouslySelected = selectionSystem.GetSelectedNode();
                     if (previouslySelected) {
                         std::string nodeName = previouslySelected->GetName();
@@ -523,19 +472,11 @@ int main(int argc, char** argv) {
                                 light->SetPosition(worldPos);
                                 std::cout << "Light position synced before deselect: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
                             }
-                        } else if (nodeName.find("Sun_") == 0) {
-                            std::string lightName = nodeName.substr(4); // "Sun_" ?????4
-                            auto light = lightManager.FindLightByName(lightName);
-                            if (light) {
-                                glm::vec3 worldPos = previouslySelected->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
-                                light->SetPosition(worldPos);
-                                std::cout << "Light position synced (from Sun) before deselect: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
-                            }
                         }
                     }
                     selectionSystem.Deselect();
                     std::cout << "Deselected" << std::endl;
-                    // ???????????????????????????????????????????????
+                    // 交换缓冲区????????????????????????????????????
                     cameraRotateLastMouseX = static_cast<float>(mouseX);
                     cameraRotateLastMouseY = static_cast<float>(mouseY);
                 }
@@ -544,27 +485,18 @@ int main(int argc, char** argv) {
             lastClickTime = clickTime;
             lastClickPos = normalizedMousePos;
         } else if (!imguiWantsMouse && !leftMouseDown && leftMousePressed) {
-            // ????????
+            // 创建相机???
             if (selectionSystem.IsDragging()) {
-                // ??????????????????????????????????????
+                // 交换缓冲区???????????????????????????
                 auto selectedNode = selectionSystem.GetSelectedNode();
                 if (selectedNode) {
                     std::string nodeName = selectedNode->GetName();
                     if (nodeName.find("LightIndicator_") == 0) {
-                        // ?????????????? "LightIndicator_" ?????
+                        // 交换缓冲区??? "LightIndicator_" ?????
                         std::string lightName = nodeName.substr(15); // "LightIndicator_" ?????15
                         auto light = lightManager.FindLightByName(lightName);
                         if (light) {
-                            // ??????????????????????????
-                            glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
-                            light->SetPosition(worldPos);
-                        }
-                    } else if (nodeName.find("Sun_") == 0) {
-                        // ?????????????? "Sun_" ?????
-                        std::string lightName = nodeName.substr(4); // "Sun_" ?????4
-                        auto light = lightManager.FindLightByName(lightName);
-                        if (light) {
-                            // ??????????????????????????
+                            // 交换缓冲区???????????????
                             glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
                             light->SetPosition(worldPos);
                         }
@@ -576,78 +508,65 @@ int main(int argc, char** argv) {
                 selectionSystem.EndScale();
             }
         } else if (leftMouseDown) {
-            // ????????
+            // 创建相机???
             if (imguiWantsMouse) {
-                // ImGui????????????????? UI ????????
+                // ImGui渲染完成???????? UI ????????
             } else if (selectionSystem.IsScaling()) {
-                // ??????
+                // 创建相机?
                 selectionSystem.UpdateScale(normalizedMousePos, camera, aspectRatio);
             } else if (selectionSystem.IsDragging()) {
-                // ??????
+                // 创建相机?
                 selectionSystem.UpdateDrag(normalizedMousePos, camera, deltaTime, aspectRatio);
                 
-                // ??????????????????????????????
+                // 交换缓冲区???????????????????
                 auto selectedNode = selectionSystem.GetSelectedNode();
                 if (selectedNode) {
                     std::string nodeName = selectedNode->GetName();
                     if (nodeName.find("LightIndicator_") == 0) {
-                        // ?????????????? "LightIndicator_" ?????
+                        // 交换缓冲区??? "LightIndicator_" ?????
                         std::string lightName = nodeName.substr(15); // "LightIndicator_" ?????15
                         auto light = lightManager.FindLightByName(lightName);
                         if (light) {
-                            // ??????????????????????????
+                            // 交换缓冲区???????????????
                             glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
                             light->SetPosition(worldPos);
-                            // ??????
+                            // 创建相机?
                             std::cout << "Light position updated to: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
-                        } else {
-                            std::cout << "Warning: Light not found with name: " << lightName << std::endl;
-                        }
-                    } else if (nodeName.find("Sun_") == 0) {
-                        // ?????????????? "Sun_" ?????
-                        std::string lightName = nodeName.substr(4); // "Sun_" ?????4
-                        auto light = lightManager.FindLightByName(lightName);
-                        if (light) {
-                            // ??????????????????????????
-                            glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
-                            light->SetPosition(worldPos);
-                            // ??????
-                            std::cout << "Light position updated (from Sun) to: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
                         } else {
                             std::cout << "Warning: Light not found with name: " << lightName << std::endl;
                         }
                     }
                 }
             } else if (!selectionSystem.HasSelection()) {
-                // ?????????????????????????????
-                // ???????????????????????????????????????
+                // 交换缓冲区??????????????????
+                // 交换缓冲区????????????????????????????
                 if (cameraRotateLastMouseX < 0.0f || cameraRotateLastMouseY < 0.0f) {
                     cameraRotateLastMouseX = static_cast<float>(mouseX);
                     cameraRotateLastMouseY = static_cast<float>(mouseY);
                 } else {
-                    // ???????????
-                    // ????????????????????????????????????
+                    // 交换缓冲区
+                    // 交换缓冲区?????????????????????????
                     float xoffset = static_cast<float>(mouseX) - cameraRotateLastMouseX;
-                    // ??????Y?????????????????mouseY???????????
+                    // 创建相机?Y?????????????????mouseY???????????
                     float yoffset = cameraRotateLastMouseY - static_cast<float>(mouseY);
                     
-                    // ????????????????????
+                    // 交换缓冲区?????????
                     if (xoffset != 0.0f || yoffset != 0.0f) {
-                        // ?????????????????????
+                        // 交换缓冲区??????????
                         camera.ProcessMouseMovement(xoffset, yoffset, true);
                     }
                     
-                    // ?????????
+                    // 创建相机????
                     cameraRotateLastMouseX = static_cast<float>(mouseX);
                     cameraRotateLastMouseY = static_cast<float>(mouseY);
                 }
             }
         } else {
-            // ??????????????????????????????
+            // 交换缓冲区???????????????????
             cameraRotateLastMouseX = -1.0f;
             cameraRotateLastMouseY = -1.0f;
 
-            // ImGui ????????????????????????
+            // ImGui 捕获鼠标时，正确结束拖拽和缩放
             if (imguiWantsMouse && leftMousePressed) {
                 if (selectionSystem.IsDragging()) {
                     selectionSystem.EndDrag();
@@ -662,66 +581,24 @@ int main(int argc, char** argv) {
         // ImGui???
         imguiSystem.BeginFrame();
 
-        // ========== 第一遍渲染：生成阴影贴图（从光源视角） ==========
-        auto lights = lightManager.GetLights();
-        glm::mat4 lightSpaceMatrix;
-        bool shadowsEnabled = false;
-        if (depthShaderFound && !lights.empty()) {
-            auto firstLight = lights[0];
-            glm::vec3 lightPos = firstLight->GetPosition();
-            // 计算光源方向（假设光源向下照射）
-            glm::vec3 lightDir = glm::normalize(glm::vec3(0.0f) - lightPos);
-            
-            // 计算光源空间矩阵
-            lightSpaceMatrix = shadowMap.GetLightSpaceMatrix(lightPos, lightDir, 0.1f, 100.0f, 25.0f);
-            
-            // 开始渲染到阴影贴图
-            shadowMap.BeginRender();
-            
-            // 使用深度着色器
-            depthShader.Use();
-            depthShader.SetMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
-            
-            // 渲染场景到阴影贴图
-            objectManager.Render(&depthShader);
-            
-            // 结束阴影贴图渲染
-            shadowMap.EndRender();
-            
-            // 恢复视口
-            glViewport(0, 0, window.GetWidth(), window.GetHeight());
-            
-            shadowsEnabled = true;
-        }
-
-        // ========== 第二遍渲染：正常渲染（使用阴影贴图） ==========
-        // ???????????????
+        // 交换缓冲区????
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // ???Shader
+        // 使用Shader
         shader.Use();
 
-        // ??????????????
+        // 交换缓冲区???
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = camera.GetProjectionMatrix(aspectRatio);
         
-        // ???????????????Shader
+        // 交换缓冲区????Shader
         shader.SetMat4("view", glm::value_ptr(view));
         shader.SetMat4("projection", glm::value_ptr(projection));
-        shader.SetMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
         
-        // 设置阴影相关uniform
-        shader.SetBool("useShadows", shadowsEnabled);
-        if (shadowsEnabled) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, shadowMap.GetDepthTexture());
-            shader.SetInt("shadowMap", 0);
-        }
-        
-        // ??????????????????- ????????????????????????????????????
+        // 交换缓冲区???????- ????????????????????????????????????
         objectManager.Update();
         
-        // ??????????????????????????????????????????
+        // 交换缓冲区???????????????????????????????
         if (selectionSystem.IsDragging()) {
             auto selectedNode = selectionSystem.GetSelectedNode();
             if (selectedNode) {
@@ -732,121 +609,90 @@ int main(int argc, char** argv) {
                     if (light) {
                         glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
                         light->SetPosition(worldPos);
-                        // ???????????????????????
+                        // 交换缓冲区????????????
                     } else {
                         std::cout << "Warning: Light not found with name: " << lightName << " (before render)" << std::endl;
                     }
-                } else if (nodeName.find("Sun_") == 0) {
-                    std::string lightName = nodeName.substr(4); // "Sun_" ?????4
-                    auto light = lightManager.FindLightByName(lightName);
-                    if (light) {
-                        glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
-                        light->SetPosition(worldPos);
-                        // ???????????????????????
-                    } else {
-                        std::cout << "Warning: Light not found with name: " << lightName << " (before render, from Sun)" << std::endl;
-                    }
                 }
             }
         }
         
-        // 设置光照参数 - 支持多光源（符合标准Phong光照模型）
-        glm::vec3 viewPos = camera.GetPosition();
-        int numLights = std::min(static_cast<int>(lights.size()), 8);  // 最多8个光源
+        // 交换缓冲区???ightManager????????- ?????????????????????
+        glm::vec3 lightPos;
+        glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+        float lightIntensity = 0.0f;  // 创建相机???
         
-        shader.SetInt("numLights", numLights);
-        // 全局环境光（独立于光源，不受距离衰减影响）
-        shader.SetVec3("globalAmbient", 0.2f, 0.2f, 0.2f);  // I_a: 全局环境光强度
-        shader.SetVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
-        
-        // 设置每个光源的属性
-        for (int i = 0; i < numLights; i++) {
-            auto light = lights[i];
-            glm::vec3 lightPos = light->GetPosition();
-            glm::vec3 lightColor = light->GetColor();
-            float lightIntensity = light->GetIntensity();
-            
-            std::string lightPrefix = "lights[" + std::to_string(i) + "].";
-            shader.SetVec3(lightPrefix + "position", lightPos.x, lightPos.y, lightPos.z);
-            shader.SetVec3(lightPrefix + "color", lightColor.r, lightColor.g, lightColor.b);
-            shader.SetFloat(lightPrefix + "intensity", lightIntensity);
-            
-            // 设置距离衰减参数（根据光源强度调整）
-            // 衰减公式: 1.0 / (constant + linear * d + quadratic * d^2)
-            // 使用常见的衰减值组合
-            shader.SetFloat(lightPrefix + "constant", 1.0f);
-            shader.SetFloat(lightPrefix + "linear", 0.09f);
-            shader.SetFloat(lightPrefix + "quadratic", 0.032f);
+        auto firstLight = lightManager.GetFirstLight();
+        if (firstLight) {
+            lightPos = firstLight->GetPosition();
+            lightColor = firstLight->GetColor();
+            lightIntensity = firstLight->GetIntensity();
+        } else {
+            // 交换缓冲区????????????0?????????
+            lightPos = glm::vec3(0.0f, 0.0f, 0.0f);  // 交换缓冲区??????0
+            lightIntensity = 0.0f;
         }
+        
+        glm::vec3 viewPos = camera.GetPosition();
+        shader.SetVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+        shader.SetVec3("lightColor", lightColor.r * lightIntensity, lightColor.g * lightIntensity, lightColor.b * lightIntensity);
+        shader.SetVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
 
-        // ????????????????????
+        // 交换缓冲区?????????
         objectManager.Render(&shader);
 
-        // ????????????????????
+        // 交换缓冲区?????????
         if (auto selectedNode = selectionSystem.GetSelectedNode()) {
-            // ?????????
+            // 创建相机????
             shader.SetBool("useOverrideColor", true);
-            shader.SetVec3("overrideColor", 0.0f, 0.0f, 0.0f);  // ???
+            shader.SetVec3("overrideColor", 0.0f, 0.0f, 0.0f);  // 黄色
             
-            // ??????????????
+            // 交换缓冲区???
             glm::mat4 identity = glm::mat4(1.0f);
             selectedNode->RenderWireframe(identity, &shader);
             
-            // ?????????
+            // 创建相机????
             shader.SetBool("useOverrideColor", false);
         }
         
-        // ?????????????????????
+        // 交换缓冲区??????????
+        auto lights = lightManager.GetLights();
         for (auto light : lights) {
-            glm::vec3 lightPos = light->GetPosition();
-            
-            // 同步太阳球体位置
-            std::string sunName = "Sun_" + light->GetName();
-            auto sunNode = objectManager.FindNode(sunName);
-            if (sunNode) {
-                auto selectedNode = selectionSystem.GetSelectedNode();
-                if (!selectedNode || selectedNode->GetName() != sunName) {
-                    // 如果太阳没有被选中，则同步位置
-                    sunNode->SetPosition(lightPos);
-                }
-            }
-            
-            // 同步指示器球体位置
             std::string indicatorName = "LightIndicator_" + light->GetName();
             auto indicatorNode = objectManager.FindNode(indicatorName);
             if (indicatorNode) {
-                // ????????????????????????????????????????
-                // ????????????????????????????????????????????
-                // ????????????????????
+                // 交换缓冲区?????????????????????????????
+                // 交换缓冲区?????????????????????????????????
+                // 交换缓冲区?????????
                 auto selectedNode = selectionSystem.GetSelectedNode();
                 bool isSelected = (selectedNode == indicatorNode);
                 
                 if (!isSelected) {
-                    // ??????????????????????????
-                    // ?????????????????????????????????
+                    // 交换缓冲区???????????????
+                    // 交换缓冲区??????????????????????
                     glm::vec3 lightWorldPos = light->GetPosition();
-                    // ??????????????????
+                    // 交换缓冲区???????
                     glm::vec3 indicatorWorldPos = indicatorNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
-                    // ????????????????????????????????????????????
+                    // 交换缓冲区?????????????????????????????????
                     float distance = glm::length(lightWorldPos - indicatorWorldPos);
-                    if (distance > 0.01f) {  // ?????????0.01?????????
+                    if (distance > 0.01f) {  // 创建相机????0.01?????????
                         SoulsEngine::Node* parent = indicatorNode->GetParent();
                         if (parent) {
-                            // ??????????????????????????
+                            // 交换缓冲区???????????????
                             glm::mat4 parentWorldInv = glm::inverse(parent->GetWorldTransform());
                             glm::vec3 localPos = glm::vec3(parentWorldInv * glm::vec4(lightWorldPos, 1.0f));
                             indicatorNode->SetPosition(localPos);
                         } else {
-                            // ?????????????????????
+                            // 交换缓冲区??????????
                             indicatorNode->SetPosition(lightWorldPos);
                         }
                     }
                 }
-                // ?????????????????????????????????????????
+                // 交换缓冲区??????????????????????????????
                 
-                // ????????????????????
+                // 交换缓冲区?????????
                 shader.SetBool("useOverrideColor", true);
-                shader.SetVec3("overrideColor", 1.0f, 1.0f, 0.0f);  // ???
+                shader.SetVec3("overrideColor", 1.0f, 1.0f, 0.0f);  // 黄色
                 
                 glm::mat4 identity = glm::mat4(1.0f);
                 indicatorNode->RenderWireframe(identity, &shader);
@@ -855,20 +701,20 @@ int main(int argc, char** argv) {
             }
         }
 
-        // ???ImGui???
-        imguiSystem.RenderSidebar(&objectManager, &selectionSystem, &camera, &lightManager, aspectRatio, nullptr, &fragmentEffectManager);
+        // 渲染ImGui界面
+        imguiSystem.RenderSidebar(&objectManager, &selectionSystem, &camera, &lightManager, aspectRatio);
         
-        // ImGui?????????
+        // ImGui渲染完成
         imguiSystem.EndFrame();
 
-        // ???????????
+        // 交换缓冲区
         window.SwapBuffers();
 
-        // ????penGL???
+        // 黄色?penGL???
         GL_CHECK_ERROR();
     }
 
-    // ????????????????????????
+    // 交换缓冲区?????????????
     imguiSystem.Shutdown();
     objectManager.Clear();
 

@@ -18,13 +18,13 @@ SceneNode::SceneNode(const std::string& name)
 void SceneNode::Render(const glm::mat4& parentTransform, Shader* shader) {
     if (!m_mesh || !shader) return;
 
-    // 璁＄畻涓栫晫鍙樻崲鐭╅樀
+    // 计算世界变换矩阵（父节点变换 * 局部变换）
     glm::mat4 worldTransform = parentTransform * GetLocalTransform();
 
-    // 璁剧疆妯″瀷鐭╅樀鍒癝hader
+    // 设置世界变换矩阵到Shader
     shader->SetMat4("model", glm::value_ptr(worldTransform));
 
-    // 应用材质参数，若有实实的结构，则使用自定义按�?
+    // 获取材质信息（如果有材质则使用，否则使用默认材质）
     const Material* activeMaterial = m_material ? m_material.get() : nullptr;
     if (!activeMaterial) {
         static Material defaultMat = Material::CreateDefault();
@@ -35,16 +35,18 @@ void SceneNode::Render(const glm::mat4& parentTransform, Shader* shader) {
     glm::vec3 diffuse = activeMaterial->GetDiffuse();
     glm::vec3 specular = activeMaterial->GetSpecular();
     float shininess = activeMaterial->GetShininess();
+    float alpha = activeMaterial->GetAlpha();
 
     shader->SetVec3("material.ambient", ambient.r, ambient.g, ambient.b);
     shader->SetVec3("material.diffuse", diffuse.r, diffuse.g, diffuse.b);
     shader->SetVec3("material.specular", specular.r, specular.g, specular.b);
     shader->SetFloat("material.shininess", shininess);
+    shader->SetFloat("material.alpha", alpha);
 
-    // 娓叉煋Mesh
+    // 渲染网格
     m_mesh->Draw();
 
-    // 閫掑綊娓叉煋鎵€鏈夊瓙鑺傜偣
+    // 递归渲染所有子节点
     for (auto& child : GetChildren()) {
         auto sceneNode = std::dynamic_pointer_cast<SceneNode>(child);
         if (sceneNode) {
@@ -56,20 +58,20 @@ void SceneNode::Render(const glm::mat4& parentTransform, Shader* shader) {
 void SceneNode::RenderWireframe(const glm::mat4& parentTransform, Shader* shader) {
     if (!m_mesh || !shader) return;
 
-    // 璁＄畻涓栫晫鍙樻崲鐭╅樀
+    // 计算世界变换矩阵（父节点变换 * 局部变换）
     glm::mat4 worldTransform = parentTransform * GetLocalTransform();
     
-    // 绋嶅井鏀惧ぇ妯″瀷浠ュ疄鐜拌竟妗嗘晥鏋�
+    // 稍微放大一点以便线框显示在实体模型外面
     glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1.02f, 1.02f, 1.02f));
     glm::mat4 scaledTransform = worldTransform * scaleMatrix;
 
-    // 璁剧疆妯″瀷鐭╅樀鍒癝hader
+    // 设置缩放后的变换矩阵到Shader
     shader->SetMat4("model", glm::value_ptr(scaledTransform));
 
-    // 娓叉煋杈规锛堜娇鐢ㄩ粦鑹茶鐩栭鑹诧�?
+    // 渲染线框（使用线框模式绘制网格）
     m_mesh->DrawWireframe();
 
-    // 閫掑綊娓叉煋鎵€鏈夊瓙鑺傜偣鐨勭嚎妗�?
+    // 递归渲染所有子节点的线框
     for (auto& child : GetChildren()) {
         auto sceneNode = std::dynamic_pointer_cast<SceneNode>(child);
         if (sceneNode) {

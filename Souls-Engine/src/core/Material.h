@@ -9,7 +9,7 @@ namespace SoulsEngine {
 class Material {
 public:
     Material();
-    Material(const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, float shininess);
+    Material(const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, float shininess, float alpha = 1.0f);
     ~Material() = default;
 
     // 环境光颜色（Ambient）
@@ -30,6 +30,10 @@ public:
     // 光泽度（Shininess）
     void SetShininess(float shininess) { m_shininess = shininess; }
     float GetShininess() const { return m_shininess; }
+
+    // 透明度（0=完全透明，1=完全不透明）
+    void SetAlpha(float alpha) { m_alpha = alpha; }
+    float GetAlpha() const { return m_alpha; }
 
     // 设置基础颜色（同时设置环境光和漫反射）
     void SetColor(const glm::vec3& color) {
@@ -52,13 +56,16 @@ public:
     static Material CreateRuby();
     static Material CreateGold();
     static Material CreateSilver();
+    static Material CreateGlass();
+    static Material CreateMetal();
 
 private:
     std::string m_name;
-    glm::vec3 m_ambient;      // 环境光颜色
-    glm::vec3 m_diffuse;      // 漫反射颜色
+    glm::vec3 m_ambient;      // 环境光
+    glm::vec3 m_diffuse;      // 漫反射
     glm::vec3 m_specular;     // 镜面反射颜色
     float m_shininess;        // 光泽度（0-128）
+    float m_alpha;            // 透明度 0-1
 };
 
 } // namespace SoulsEngine

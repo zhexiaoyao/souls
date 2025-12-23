@@ -5,7 +5,6 @@
 #include <vector>
 #include <memory>
 #include <cctype>
-#include <glm/glm.hpp>
 
 namespace SoulsEngine {
 
@@ -107,4 +106,5 @@ std::unique_ptr<Mesh> LoadOBJFromFile(const std::string& path) {
 }
 
 } // namespace SoulsEngine
+
 

@@ -353,4 +353,31 @@ cmake ..
 4. 检查文件路径是否正确
 5. 确保 OpenGL 驱动是最新的
 
+## 导入外部模型（OBJ / Blender / Assimp）
+
+- 支持的导入方式：
+  - 内置轻量 OBJ 导入器（无需额外依赖）：通过 `src/io/OBJLoader.cpp` 实现，导入后会把顶点转换为引擎当前的顶点格式（position(3) + color(3)），颜色会根据法线映射为可视化颜色。
+  - Assimp（可选）：如果系统上安装并且 CMake 能找到 `assimp`，构建时会启用 `AssimpLoader`（`src/io/AssimpLoader.cpp`），Assimp 能读取更多格式（如 `.blend`, `.fbx`, `.dae` 等）。
+
+- 运行时加载模型：
+  - 命令行参数传入模型路径即可在启动时加载并显示模型，例如：
+
+```powershell
+.\bin\Debug\SoulsEngine.exe assets/models/examples/triangle.obj
+```
+
+  - 如果不传入参数，程序会尝试加载内置示例 `assets/models/examples/triangle.obj`（如果存在）。
+
+- Blender 导出脚本（批量转换）：
+  - 附带示例脚本 `tools/blender_export.py`，可在命令行调用 Blender 将 `.blend` 导出为 OBJ 或 glTF：
+
+```bash
+blender -b input.blend --python tools/blender_export.py -- output.obj
+```
+
+- 在 Windows 上启用 Assimp（可选）：
+  - 推荐使用 `vcpkg` 安装：在 `vcpkg` 环境中运行 `.\vcpkg install assimp:x64-windows`，然后在 CMake 配置时传入 `-DCMAKE_TOOLCHAIN_FILE=[vcpkg]/scripts/buildsystems/vcpkg.cmake`。
+  - 如果 CMake 找到 assimp，会自动把 `AssimpLoader` 加入构建并链接 `assimp::assimp`，否则项目仍可正常构建（使用内置 OBJ 导入）。
+
+
 祝开发顺利！🚀

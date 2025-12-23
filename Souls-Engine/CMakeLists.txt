@@ -6,9 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 修复MSVC并行编译时的PDB写入冲突，并设置UTF-8编码
+# /wd4828 用于抑制"文件包含无效字符"的警告（C4828）
+# /wd4273 用于抑制"DLL链接不一致"的警告（C4273），GLAD与Windows gl.h冲突导致
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS /utf-8")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS /utf-8")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS /utf-8 /wd4828 /wd4273")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS /utf-8 /wd4828 /wd4273")
 endif()
 
 # 确保构建目录不与源码目录相同
@@ -16,7 +18,7 @@ if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
     message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there.")
 endif()
 
-# 查找GLFW库
+# 查找GLFW�?
 # 优先使用系统已安装的GLFW
 find_package(glfw3 QUIET)
 if(NOT glfw3_FOUND)
@@ -26,23 +28,23 @@ if(NOT glfw3_FOUND)
 endif()
 
 # 配置GLAD
-# 假设我们将在include目录下放置glad头文件
+# 假设我们将在include目录下放置glad头文�?
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include/KHR)
-# 添加src目录到包含路径，以便使用相对路径包含头文件
+# 添加src目录到包含路径，以便使用相对路径包含头文�?
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
-# 查找GLM库
+# 查找GLM�?
 find_package(glm QUIET)
 if(NOT glm_FOUND)
     message(STATUS "GLM not found, will build from source")
     add_subdirectory(extern/glm)
 endif()
 
-# 包含stb_image头文件
+# 包含stb_image头文�?
 include_directories(${CMAKE_SOURCE_DIR}/extern/stb)
 
-# 包含ImGui头文件
+# 包含ImGui头文�?
 include_directories(${CMAKE_SOURCE_DIR}/extern/imgui)
 include_directories(${CMAKE_SOURCE_DIR}/extern/imgui/backends)
 
@@ -122,16 +124,18 @@ add_executable(${PROJECT_NAME}_Game ${GAME_SOURCES})
 add_executable(${PROJECT_NAME}_FPS ${FPS_GAME_SOURCES})
 
 # 修复MSVC并行编译时的PDB写入冲突，并设置UTF-8编码（在目标上设置）
+# /wd4828 用于抑制"文件包含无效字符"的警告（C4828）
+# /wd4273 用于抑制"DLL链接不一致"的警告（C4273），GLAD与Windows gl.h冲突导致
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /FS /utf-8)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8>)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8>)
-    target_compile_options(${PROJECT_NAME}_Game PRIVATE /FS /utf-8)
-    target_compile_options(${PROJECT_NAME}_Game PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8>)
-    target_compile_options(${PROJECT_NAME}_Game PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8>)
-    target_compile_options(${PROJECT_NAME}_FPS PRIVATE /FS /utf-8)
-    target_compile_options(${PROJECT_NAME}_FPS PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8>)
-    target_compile_options(${PROJECT_NAME}_FPS PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8>)
+    target_compile_options(${PROJECT_NAME} PRIVATE /FS /utf-8 /wd4828 /wd4273)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8 /wd4828 /wd4273>)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8 /wd4828 /wd4273>)
+    target_compile_options(${PROJECT_NAME}_Game PRIVATE /FS /utf-8 /wd4828 /wd4273)
+    target_compile_options(${PROJECT_NAME}_Game PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8 /wd4828 /wd4273>)
+    target_compile_options(${PROJECT_NAME}_Game PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8 /wd4828 /wd4273>)
+    target_compile_options(${PROJECT_NAME}_FPS PRIVATE /FS /utf-8 /wd4828 /wd4273)
+    target_compile_options(${PROJECT_NAME}_FPS PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8 /wd4828 /wd4273>)
+    target_compile_options(${PROJECT_NAME}_FPS PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8 /wd4828 /wd4273>)
 endif()
 
 # 链接库 - 编辑器
@@ -162,6 +166,21 @@ if(assimp_FOUND)
     target_link_libraries(${PROJECT_NAME}_FPS PRIVATE assimp::assimp)
 endif()
 
+# Windows下链接到opengl32
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME} opengl32)
+    target_link_libraries(${PROJECT_NAME}_Game opengl32)
+    target_link_libraries(${PROJECT_NAME}_FPS opengl32)
+    # Windows file dialog API requires comdlg32
+    target_link_libraries(${PROJECT_NAME} comdlg32)
+else()
+    # 其它系统链接到OpenGL
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} OpenGL::GL)
+    target_link_libraries(${PROJECT_NAME}_Game OpenGL::GL)
+    target_link_libraries(${PROJECT_NAME}_FPS OpenGL::GL)
+endif()
+
 # 链接C++17 filesystem库（Windows需要）
 if(MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE)
@@ -174,7 +193,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_L
     target_link_libraries(${PROJECT_NAME}_FPS PRIVATE stdc++fs)
 endif()
 
-# 如果GLM作为子项目，需要链接
+# 如果GLM作为子项目，需要链�?
 if(TARGET glm::glm_static)
     target_link_libraries(${PROJECT_NAME} glm::glm_static)
     target_link_libraries(${PROJECT_NAME}_Game glm::glm_static)
@@ -185,7 +204,7 @@ elseif(TARGET glm::glm)
     target_link_libraries(${PROJECT_NAME}_FPS glm::glm)
 endif()
 
-# 复制资源文件到构建目录
+# 复制资源文件到构建目�?
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
@@ -206,7 +225,7 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
 # 调试配置
 if(MSVC)
-    # 设置Visual Studio的工作目录，方便调试时找到资源文件
+    # 设置Visual Studio的工作目录，方便调试时找到资源文�?
     set_target_properties(${PROJECT_NAME} PROPERTIES 
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     )
