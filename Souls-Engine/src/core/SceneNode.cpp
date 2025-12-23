@@ -24,7 +24,7 @@ void SceneNode::Render(const glm::mat4& parentTransform, Shader* shader) {
     // 璁剧疆妯″瀷鐭╅樀鍒癝hader
     shader->SetMat4("model", glm::value_ptr(worldTransform));
 
-    // 应用材质参数，若有实实的结构，则使用自定义按�?
+    // 应用材质参数，若有实实的结构，则使用自定义按�?
     const Material* activeMaterial = m_material ? m_material.get() : nullptr;
     if (!activeMaterial) {
         static Material defaultMat = Material::CreateDefault();
@@ -66,10 +66,10 @@ void SceneNode::RenderWireframe(const glm::mat4& parentTransform, Shader* shader
     // 璁剧疆妯″瀷鐭╅樀鍒癝hader
     shader->SetMat4("model", glm::value_ptr(scaledTransform));
 
-    // 娓叉煋杈规锛堜娇鐢ㄩ粦鑹茶鐩栭鑹诧�?
+    // 娓叉煋杈规锛堜娇鐢ㄩ粦鑹茶鐩栭鑹诧�?
     m_mesh->DrawWireframe();
 
-    // 閫掑綊娓叉煋鎵€鏈夊瓙鑺傜偣鐨勭嚎妗�?
+    // 閫掑綊娓叉煋鎵€鏈夊瓙鑺傜偣鐨勭嚎妗�?
     for (auto& child : GetChildren()) {
         auto sceneNode = std::dynamic_pointer_cast<SceneNode>(child);
         if (sceneNode) {

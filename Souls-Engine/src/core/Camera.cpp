@@ -78,10 +78,15 @@ void Camera::ProcessMouseScroll(float yoffset) {
 
 void Camera::UpdateCameraVectors() {
     // 根据欧拉角计算前向量
+    // 优化：缓存弧度值，避免重复计算
+    float yawRad = glm::radians(m_yaw);
+    float pitchRad = glm::radians(m_pitch);
+    float cosPitch = cos(pitchRad);
+    
     glm::vec3 front;
-    front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-    front.y = sin(glm::radians(m_pitch));
-    front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+    front.x = cos(yawRad) * cosPitch;
+    front.y = sin(pitchRad);
+    front.z = sin(yawRad) * cosPitch;
     m_front = glm::normalize(front);
     
     // 计算右向量和上向量

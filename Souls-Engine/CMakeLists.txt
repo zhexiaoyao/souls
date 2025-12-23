@@ -46,9 +46,14 @@ include_directories(${CMAKE_SOURCE_DIR}/extern/stb)
 include_directories(${CMAKE_SOURCE_DIR}/extern/imgui)
 include_directories(${CMAKE_SOURCE_DIR}/extern/imgui/backends)
 
-# 明确指定源码文件（避免包含构建目录中的文件）
-set(SOURCES
-    src/main.cpp
+# 可选：尝试查找 Assimp，用于在构建时决定是否链接 assimp 和启用加载器功能
+find_package(assimp CONFIG QUIET)
+if(assimp_FOUND)
+    message(STATUS "Assimp found; enabling AssimpLoader")
+endif()
+
+# 核心源文件（共享）
+set(CORE_SOURCES
     src/core/Window.cpp
     src/core/OpenGLContext.cpp
     src/core/Shader.cpp
@@ -64,6 +69,8 @@ set(SOURCES
     src/core/Light.cpp
     src/core/LightManager.cpp
     src/core/ImGuiSystem.cpp
+    src/core/GameManager.cpp
+    src/core/ShadowMap.cpp
     extern/imgui/imgui.cpp
     extern/imgui/imgui_draw.cpp
     extern/imgui/imgui_tables.cpp
@@ -77,43 +84,121 @@ set(SOURCES
     src/geometry/Cone.cpp
     src/geometry/Prism.cpp
     src/geometry/Frustum.cpp
+    src/geometry/Disk.cpp
+    src/geometry/GridPlane.cpp
+    src/io/OBJLoader.cpp
+    src/io/AssimpLoader.cpp
+    src/io/OBJExporter.cpp
+    src/core/FPSGameManager.cpp
+    src/core/WeaponModel.cpp
+    src/core/FragmentEffectManager.cpp
 )
 
-# 创建可执行文件
-add_executable(${PROJECT_NAME} ${SOURCES})
+# 编辑器可执行文件
+set(EDITOR_SOURCES
+    src/main.cpp
+    ${CORE_SOURCES}
+)
+
+# 游戏可执行文件
+set(GAME_SOURCES
+    src/game_main.cpp
+    ${CORE_SOURCES}
+)
+
+# FPS游戏可执行文件
+set(FPS_GAME_SOURCES
+    game/fps_main.cpp
+    ${CORE_SOURCES}
+)
+
+# 创建编辑器可执行文件
+add_executable(${PROJECT_NAME} ${EDITOR_SOURCES})
+
+# 创建游戏可执行文件
+add_executable(${PROJECT_NAME}_Game ${GAME_SOURCES})
+
+# 创建FPS游戏可执行文件
+add_executable(${PROJECT_NAME}_FPS ${FPS_GAME_SOURCES})
 
 # 修复MSVC并行编译时的PDB写入冲突，并设置UTF-8编码（在目标上设置）
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /FS /utf-8)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8>)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8>)
+    target_compile_options(${PROJECT_NAME}_Game PRIVATE /FS /utf-8)
+    target_compile_options(${PROJECT_NAME}_Game PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8>)
+    target_compile_options(${PROJECT_NAME}_Game PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8>)
+    target_compile_options(${PROJECT_NAME}_FPS PRIVATE /FS /utf-8)
+    target_compile_options(${PROJECT_NAME}_FPS PRIVATE $<$<COMPILE_LANGUAGE:C>:/FS /utf-8>)
+    target_compile_options(${PROJECT_NAME}_FPS PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/FS /utf-8>)
 endif()
 
-# 链接库
+# 链接库 - 编辑器
 target_link_libraries(${PROJECT_NAME} 
     glfw
     ${CMAKE_DL_LIBS}  # 包含GLAD的动态链接
 )
 
+# 链接库 - 游戏
+target_link_libraries(${PROJECT_NAME}_Game 
+    glfw
+    ${CMAKE_DL_LIBS}  # 包含GLAD的动态链接
+)
+
+# 链接库 - FPS游戏
+target_link_libraries(${PROJECT_NAME}_FPS 
+    glfw
+    ${CMAKE_DL_LIBS}  # 包含GLAD的动态链接
+)
+
+# 如果找到了 assimp，则在目标上启用编译宏并链接 assimp（可选）
+if(assimp_FOUND)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_ASSIMP)
+    target_compile_definitions(${PROJECT_NAME}_Game PRIVATE USE_ASSIMP)
+    target_compile_definitions(${PROJECT_NAME}_FPS PRIVATE USE_ASSIMP)
+    target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
+    target_link_libraries(${PROJECT_NAME}_Game PRIVATE assimp::assimp)
+    target_link_libraries(${PROJECT_NAME}_FPS PRIVATE assimp::assimp)
+endif()
+
 # 链接C++17 filesystem库（Windows需要）
 if(MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE)
+    target_link_libraries(${PROJECT_NAME}_Game PRIVATE)
+    target_link_libraries(${PROJECT_NAME}_FPS PRIVATE)
 endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")
     target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
+    target_link_libraries(${PROJECT_NAME}_Game PRIVATE stdc++fs)
+    target_link_libraries(${PROJECT_NAME}_FPS PRIVATE stdc++fs)
 endif()
 
 # 如果GLM作为子项目，需要链接
 if(TARGET glm::glm_static)
     target_link_libraries(${PROJECT_NAME} glm::glm_static)
+    target_link_libraries(${PROJECT_NAME}_Game glm::glm_static)
+    target_link_libraries(${PROJECT_NAME}_FPS glm::glm_static)
 elseif(TARGET glm::glm)
     target_link_libraries(${PROJECT_NAME} glm::glm)
+    target_link_libraries(${PROJECT_NAME}_Game glm::glm)
+    target_link_libraries(${PROJECT_NAME}_FPS glm::glm)
 endif()
 
 # 复制资源文件到构建目录
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+)
+
+add_custom_command(TARGET ${PROJECT_NAME}_Game POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}_Game>/assets
+)
+
+add_custom_command(TARGET ${PROJECT_NAME}_FPS POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}_FPS>/assets
 )
 
 # 设置输出目录
@@ -123,6 +208,12 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 if(MSVC)
     # 设置Visual Studio的工作目录，方便调试时找到资源文件
     set_target_properties(${PROJECT_NAME} PROPERTIES 
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    set_target_properties(${PROJECT_NAME}_Game PROPERTIES 
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    set_target_properties(${PROJECT_NAME}_FPS PROPERTIES 
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     )
 endif()

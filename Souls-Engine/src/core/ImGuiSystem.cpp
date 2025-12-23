@@ -7,12 +7,16 @@
 #include "SceneNode.h"
 #include "SelectionSystem.h"
 #include "Material.h"
+#include "WeaponModel.h"
+#include "FPSGameManager.h"
+#include "FragmentEffectManager.h"
 #include "../geometry/Cone.h"
 #include "../geometry/Cube.h"
 #include "../geometry/Cylinder.h"
 #include "../geometry/Frustum.h"
 #include "../geometry/Prism.h"
 #include "../geometry/Sphere.h"
+#include "../io/OBJExporter.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -141,7 +145,9 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
                                 SelectionSystem* selectionSystem,
                                 Camera* camera,
                                 LightManager* lightManager,
-                                float /*aspectRatio*/) {
+                                float /*aspectRatio*/,
+                                FPSGameManager* fpsGameManager,
+                                FragmentEffectManager* fragmentEffectManager) {
     if (!objectManager || !selectionSystem || !camera || !lightManager) return;
 
     // 固定左侧工具栏
@@ -225,16 +231,97 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
             selectionSystem->SelectNode(node);
         }
 
+        ImGui::Separator();
+        
+        // 添加标靶创建按钮
+        if (ImGui::Button("标靶（薄圆柱）", ImVec2(-1, 0))) {
+            // 创建标靶（薄圆柱体，红色）
+            float targetRadius = 1.0f;
+            float targetThickness = 0.1f;  // 薄圆柱体高度
+            auto mesh = std::make_shared<Cylinder>(targetRadius, targetThickness, 36, glm::vec3(1.0f, 0.0f, 0.0f));  // 红色
+            auto name = "Target_" + std::to_string(geometryCounter++);
+            auto node = objectManager->CreateNode(name, mesh);
+            glm::vec3 camPos = camera->GetPosition();
+            glm::vec3 camFront = camera->GetFront();
+            glm::vec3 targetPos = camPos + camFront * 5.0f;
+            node->SetPosition(targetPos);
+            
+            // 旋转标靶使其圆形面朝向相机
+            glm::vec3 toCamera = camPos - targetPos;
+            if (glm::length(toCamera) > 0.001f) {
+                glm::vec3 direction = glm::normalize(toCamera);
+                float yaw = atan2(direction.x, direction.z) * 180.0f / 3.14159265359f;
+                float horizontalDist = sqrt(direction.x * direction.x + direction.z * direction.z);
+                float pitch = atan2(-direction.y, horizontalDist) * 180.0f / 3.14159265359f;
+                node->SetRotation(90.0f + pitch, yaw, 0.0f);
+            } else {
+                node->SetRotation(90.0f, 0.0f, 0.0f);
+            }
+            
+            selectionSystem->SelectNode(node);
+        }
+
         ImGui::Unindent();
     }
 
     ImGui::Spacing();
 
-    // 2. 生成特定模型（占位）
+    // 2. 生成特定模型
     if (ImGui::CollapsingHeader("2. 生成特定模型", ImGuiTreeNodeFlags_None)) {
         ImGui::Indent();
-        ImGui::Text("功能开发中...");
-        ImGui::Text("敬请期待");
+        
+        // 武器模型生成
+        if (ImGui::Button("生成武器模型", ImVec2(-1, 0))) {
+            WeaponModel weaponModel;
+            weaponModel.CreateWeapon(objectManager);
+            auto weaponNode = weaponModel.GetWeaponNode();
+            if (weaponNode) {
+                // 设置武器位置在相机前方
+                glm::vec3 camPos = camera->GetPosition();
+                glm::vec3 camFront = camera->GetFront();
+                weaponNode->SetPosition(camPos + camFront * 5.0f);
+                selectionSystem->SelectNode(weaponNode);
+                
+                // 保存武器模型到文件
+                std::string weaponModelPath = "assets/models/weapon.obj";
+                if (OBJExporter::ExportWeaponModel(weaponNode, weaponModelPath)) {
+                    ImGui::OpenPopup("武器模型已保存");
+                }
+            }
+        }
+        
+        // 显示保存成功提示
+        if (ImGui::BeginPopupModal("武器模型已保存", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("武器模型已保存至: assets/models/weapon.obj");
+            if (ImGui::Button("确定")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+        
+        ImGui::Unindent();
+    }
+
+    ImGui::Spacing();
+
+    // 碎裂效果
+    if (ImGui::CollapsingHeader("碎裂效果", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
+        auto selectedNode = selectionSystem->GetSelectedNode();
+        if (!selectedNode) {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "请先选择对象");
+        } else {
+            bool isFragmenting = fragmentEffectManager && fragmentEffectManager->IsFragmenting(selectedNode);
+            if (isFragmenting) {
+                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "对象正在碎裂中...");
+            } else {
+                if (ImGui::Button("播放碎裂动画", ImVec2(-1, 0))) {
+                    if (fragmentEffectManager) {
+                        fragmentEffectManager->StartFragmentation(selectedNode);
+                    }
+                }
+            }
+        }
         ImGui::Unindent();
     }
 
@@ -343,6 +430,44 @@ void ImGuiSystem::RenderSidebar(ObjectManager* objectManager,
             }
         }
 
+        ImGui::Unindent();
+    }
+
+    ImGui::Spacing();
+
+    // 状态——击碎中
+    if (ImGui::CollapsingHeader("状态——击碎中", ImGuiTreeNodeFlags_None)) {
+        ImGui::Indent();
+        
+        if (fpsGameManager) {
+            // 获取所有处于"击碎中"状态的目标
+            auto fragmentingTargets = fpsGameManager->GetTargetsByState(TargetState::Fragmenting);
+            
+            if (fragmentingTargets.empty()) {
+                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "当前没有击碎中的目标");
+            } else {
+                ImGui::Text("击碎中的目标数量: %d", static_cast<int>(fragmentingTargets.size()));
+                ImGui::Spacing();
+                
+                for (const auto& target : fragmentingTargets) {
+                    ImGui::PushID(target.targetId);
+                    ImGui::Text("目标 #%d", target.targetId);
+                    ImGui::SameLine();
+                    ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "[击碎中]");
+                    
+                    // 显示目标位置
+                    ImGui::Text("位置: (%.2f, %.2f, %.2f)", 
+                                target.position.x, target.position.y, target.position.z);
+                    
+                    ImGui::Spacing();
+                    ImGui::PopID();
+                }
+            }
+        } else {
+            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "FPS游戏管理器未初始化");
+            ImGui::Text("此功能仅在FPS游戏模式下可用");
+        }
+        
         ImGui::Unindent();
     }
 

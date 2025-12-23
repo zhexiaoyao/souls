@@ -12,15 +12,20 @@
 // ???????????
 // #include "core/Material.h"
 #include "core/ImGuiSystem.h"
+#include "core/FragmentEffectManager.h"
 #include "core/Light.h"
 #include "core/LightManager.h"
+#include "core/ShadowMap.h"
 #include "geometry/Cube.h"
 #include "geometry/Sphere.h"
 #include "geometry/Cylinder.h"
 #include "geometry/Cone.h"
 #include "geometry/Prism.h"
 #include "geometry/Frustum.h"
+#include "geometry/GridPlane.h"
 #include "geometry/Mesh.h"
+#include "io/AssimpLoader.h"
+#include "io/OBJLoader.h"
 #include <GLFW/glfw3.h>
 #include <imgui.h> // ?? ImGui ??????????
 #include <glm/glm.hpp>
@@ -39,7 +44,7 @@ bool FileExists(const std::string& path) {
     return file.good();
 }
 
-int main() {
+int main(int argc, char** argv) {
     // ????????????UTF-8??indows??
     #ifdef _WIN32
     SetConsoleOutputCP(65001);
@@ -152,6 +157,48 @@ int main() {
     SoulsEngine::ObjectManager objectManager;
     std::cout << "Object Manager created" << std::endl;
 
+    // 默认环境：黑白棋盘格地平面
+    {
+        auto gridMesh = std::make_shared<SoulsEngine::GridPlane>(40.0f, 40);
+        auto gridNode = objectManager.CreateNode("Ground", gridMesh);
+        gridNode->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    }
+
+    // 如果传入了命令行参数，尝试加载指定模型文件（优先使用 AssimpLoader，如果可用）
+    if (argc > 1) {
+        std::string modelPath = argv[1];
+        std::unique_ptr<SoulsEngine::Mesh> importedMesh;
+        // 尝试使用 Assimp（如果启用）
+        importedMesh = SoulsEngine::LoadModelWithAssimp(modelPath);
+        if (!importedMesh) {
+            // 回退到 OBJ 加载
+            importedMesh = SoulsEngine::LoadOBJFromFile(modelPath);
+        }
+        if (importedMesh) {
+            // 将 unique_ptr 转为 shared_ptr（安全地释放 unique_ptr 的所有权）
+            std::shared_ptr<SoulsEngine::Mesh> meshShared;
+            meshShared.reset(importedMesh.release());
+            auto node = objectManager.CreateNode("ImportedModel", meshShared);
+            node->SetPosition(glm::vec3(0.0f, 0.5f, 0.0f));
+            std::cout << "Imported model: " << modelPath << std::endl;
+        } else {
+            std::cout << "Failed to import model: " << modelPath << std::endl;
+        }
+    } else {
+        // 如果没有提供参数，尝试加载内置示例模型（assets/models/examples/triangle.obj）
+        const std::string examplePath = "assets/models/examples/triangle.obj";
+        if (FileExists(examplePath)) {
+            auto mesh = SoulsEngine::LoadOBJFromFile(examplePath);
+            if (mesh) {
+                std::shared_ptr<SoulsEngine::Mesh> meshShared;
+                meshShared.reset(mesh.release());
+                auto node = objectManager.CreateNode("ExampleTriangle", meshShared);
+                node->SetPosition(glm::vec3(0.0f, 0.5f, 0.0f));
+                std::cout << "Loaded example model: " << examplePath << std::endl;
+            }
+        }
+    }
+
     // ?????????
     SoulsEngine::SelectionSystem selectionSystem;
     std::cout << "Selection System created" << std::endl;
@@ -159,6 +206,62 @@ int main() {
     // ???????????
     SoulsEngine::LightManager lightManager;
     std::cout << "Light Manager created" << std::endl;
+
+    // 默认环境光源：在场景中心上方放置一个点光源，便于展示地面与物体
+    {
+        glm::vec3 defaultLightPos(0.0f, 5.0f, 0.0f);
+        glm::vec3 defaultLightColor(1.0f, 1.0f, 1.0f);
+        float defaultLightIntensity = 3.0f;
+        float defaultLightAngle = 360.0f;
+        auto defaultLight = lightManager.AddLight(defaultLightPos, defaultLightColor, defaultLightIntensity, defaultLightAngle);
+
+        // 创建太阳球体（橙红色），便于在场景中看到光源位置
+        glm::vec3 sunColor(1.0f, 0.5f, 0.0f);  // 橙红色 (RGB: 255, 128, 0)
+        auto sunMesh = std::make_shared<SoulsEngine::Sphere>(0.6f, 32, 16, sunColor);  // 较大的球体（半径0.6）作为太阳
+        auto sunName = "Sun_" + defaultLight->GetName();
+        auto sunNode = objectManager.CreateNode(sunName, sunMesh);
+        sunNode->SetPosition(defaultLightPos);
+        
+        // 保留原有的黄色指示器球体（较小，用于精确定位）
+        auto lightIndicatorMesh = std::make_shared<SoulsEngine::Sphere>(0.2f, 16, 8, glm::vec3(1.0f, 1.0f, 0.0f));
+        auto indicatorName = "LightIndicator_" + defaultLight->GetName();
+        auto indicatorNode = objectManager.CreateNode(indicatorName, lightIndicatorMesh);
+        indicatorNode->SetPosition(defaultLightPos);
+    }
+
+    // 创建阴影映射
+    SoulsEngine::ShadowMap shadowMap(2048, 2048);
+    if (!shadowMap.Initialize()) {
+        std::cerr << "ERROR: Failed to initialize shadow map!" << std::endl;
+    } else {
+        std::cout << "Shadow Map initialized successfully!" << std::endl;
+    }
+
+    // 创建深度着色器（用于生成阴影贴图）
+    SoulsEngine::Shader depthShader;
+    std::vector<std::string> depthShaderPaths = {
+        "assets/shaders/",
+        "../assets/shaders/",
+        "../../assets/shaders/",
+        "../../../assets/shaders/",
+        "build/bin/Debug/assets/shaders/",
+        "build/bin/Release/assets/shaders/"
+    };
+    std::string depthVertPath, depthFragPath;
+    bool depthShaderFound = false;
+    for (const auto& basePath : depthShaderPaths) {
+        depthVertPath = basePath + "depth.vert";
+        depthFragPath = basePath + "depth.frag";
+        if (FileExists(depthVertPath) && FileExists(depthFragPath)) {
+            depthShaderFound = true;
+            break;
+        }
+    }
+    if (depthShaderFound && depthShader.LoadFromFiles(depthVertPath, depthFragPath)) {
+        std::cout << "Depth shader loaded successfully!" << std::endl;
+    } else {
+        std::cerr << "Warning: Depth shader not found, shadows will be disabled" << std::endl;
+    }
 
     // ???ImGui???
     SoulsEngine::ImGuiSystem imguiSystem;
@@ -169,6 +272,10 @@ int main() {
         return -1;
     }
     std::cout << "ImGui System initialized" << std::endl;
+
+    // 创建碎裂效果管理器
+    SoulsEngine::FragmentEffectManager fragmentEffectManager(&objectManager);
+    std::cout << "Fragment Effect Manager created" << std::endl;
 
     // ??????????????????
     int geometryCounter = 0;
@@ -224,6 +331,9 @@ int main() {
         float currentTime = static_cast<float>(glfwGetTime());
         float deltaTime = currentTime - lastTime;
         lastTime = currentTime;
+
+        // 更新碎裂效果
+        fragmentEffectManager.Update(deltaTime);
 
         // ?????????
         window.PollEvents();
@@ -413,6 +523,14 @@ int main() {
                                 light->SetPosition(worldPos);
                                 std::cout << "Light position synced before deselect: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
                             }
+                        } else if (nodeName.find("Sun_") == 0) {
+                            std::string lightName = nodeName.substr(4); // "Sun_" ?????4
+                            auto light = lightManager.FindLightByName(lightName);
+                            if (light) {
+                                glm::vec3 worldPos = previouslySelected->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                                light->SetPosition(worldPos);
+                                std::cout << "Light position synced (from Sun) before deselect: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
+                            }
                         }
                     }
                     selectionSystem.Deselect();
@@ -435,6 +553,15 @@ int main() {
                     if (nodeName.find("LightIndicator_") == 0) {
                         // ?????????????? "LightIndicator_" ?????
                         std::string lightName = nodeName.substr(15); // "LightIndicator_" ?????15
+                        auto light = lightManager.FindLightByName(lightName);
+                        if (light) {
+                            // ??????????????????????????
+                            glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                            light->SetPosition(worldPos);
+                        }
+                    } else if (nodeName.find("Sun_") == 0) {
+                        // ?????????????? "Sun_" ?????
+                        std::string lightName = nodeName.substr(4); // "Sun_" ?????4
                         auto light = lightManager.FindLightByName(lightName);
                         if (light) {
                             // ??????????????????????????
@@ -473,6 +600,19 @@ int main() {
                             light->SetPosition(worldPos);
                             // ??????
                             std::cout << "Light position updated to: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
+                        } else {
+                            std::cout << "Warning: Light not found with name: " << lightName << std::endl;
+                        }
+                    } else if (nodeName.find("Sun_") == 0) {
+                        // ?????????????? "Sun_" ?????
+                        std::string lightName = nodeName.substr(4); // "Sun_" ?????4
+                        auto light = lightManager.FindLightByName(lightName);
+                        if (light) {
+                            // ??????????????????????????
+                            glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                            light->SetPosition(worldPos);
+                            // ??????
+                            std::cout << "Light position updated (from Sun) to: (" << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ")" << std::endl;
                         } else {
                             std::cout << "Warning: Light not found with name: " << lightName << std::endl;
                         }
@@ -522,6 +662,39 @@ int main() {
         // ImGui???
         imguiSystem.BeginFrame();
 
+        // ========== 第一遍渲染：生成阴影贴图（从光源视角） ==========
+        auto lights = lightManager.GetLights();
+        glm::mat4 lightSpaceMatrix;
+        bool shadowsEnabled = false;
+        if (depthShaderFound && !lights.empty()) {
+            auto firstLight = lights[0];
+            glm::vec3 lightPos = firstLight->GetPosition();
+            // 计算光源方向（假设光源向下照射）
+            glm::vec3 lightDir = glm::normalize(glm::vec3(0.0f) - lightPos);
+            
+            // 计算光源空间矩阵
+            lightSpaceMatrix = shadowMap.GetLightSpaceMatrix(lightPos, lightDir, 0.1f, 100.0f, 25.0f);
+            
+            // 开始渲染到阴影贴图
+            shadowMap.BeginRender();
+            
+            // 使用深度着色器
+            depthShader.Use();
+            depthShader.SetMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
+            
+            // 渲染场景到阴影贴图
+            objectManager.Render(&depthShader);
+            
+            // 结束阴影贴图渲染
+            shadowMap.EndRender();
+            
+            // 恢复视口
+            glViewport(0, 0, window.GetWidth(), window.GetHeight());
+            
+            shadowsEnabled = true;
+        }
+
+        // ========== 第二遍渲染：正常渲染（使用阴影贴图） ==========
         // ???????????????
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -535,6 +708,15 @@ int main() {
         // ???????????????Shader
         shader.SetMat4("view", glm::value_ptr(view));
         shader.SetMat4("projection", glm::value_ptr(projection));
+        shader.SetMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
+        
+        // 设置阴影相关uniform
+        shader.SetBool("useShadows", shadowsEnabled);
+        if (shadowsEnabled) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, shadowMap.GetDepthTexture());
+            shader.SetInt("shadowMap", 0);
+        }
         
         // ??????????????????- ????????????????????????????????????
         objectManager.Update();
@@ -554,30 +736,48 @@ int main() {
                     } else {
                         std::cout << "Warning: Light not found with name: " << lightName << " (before render)" << std::endl;
                     }
+                } else if (nodeName.find("Sun_") == 0) {
+                    std::string lightName = nodeName.substr(4); // "Sun_" ?????4
+                    auto light = lightManager.FindLightByName(lightName);
+                    if (light) {
+                        glm::vec3 worldPos = selectedNode->LocalToWorld(glm::vec3(0.0f, 0.0f, 0.0f));
+                        light->SetPosition(worldPos);
+                        // ???????????????????????
+                    } else {
+                        std::cout << "Warning: Light not found with name: " << lightName << " (before render, from Sun)" << std::endl;
+                    }
                 }
             }
         }
         
-        // ??????????????ightManager????????- ?????????????????????
-        glm::vec3 lightPos;
-        glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
-        float lightIntensity = 0.0f;  // ????????
-        
-        auto firstLight = lightManager.GetFirstLight();
-        if (firstLight) {
-            lightPos = firstLight->GetPosition();
-            lightColor = firstLight->GetColor();
-            lightIntensity = firstLight->GetIntensity();
-        } else {
-            // ???????????????????????0?????????
-            lightPos = glm::vec3(0.0f, 0.0f, 0.0f);  // ?????????????????0
-            lightIntensity = 0.0f;
-        }
-        
+        // 设置光照参数 - 支持多光源（符合标准Phong光照模型）
         glm::vec3 viewPos = camera.GetPosition();
-        shader.SetVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
-        shader.SetVec3("lightColor", lightColor.r * lightIntensity, lightColor.g * lightIntensity, lightColor.b * lightIntensity);
+        int numLights = std::min(static_cast<int>(lights.size()), 8);  // 最多8个光源
+        
+        shader.SetInt("numLights", numLights);
+        // 全局环境光（独立于光源，不受距离衰减影响）
+        shader.SetVec3("globalAmbient", 0.2f, 0.2f, 0.2f);  // I_a: 全局环境光强度
         shader.SetVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
+        
+        // 设置每个光源的属性
+        for (int i = 0; i < numLights; i++) {
+            auto light = lights[i];
+            glm::vec3 lightPos = light->GetPosition();
+            glm::vec3 lightColor = light->GetColor();
+            float lightIntensity = light->GetIntensity();
+            
+            std::string lightPrefix = "lights[" + std::to_string(i) + "].";
+            shader.SetVec3(lightPrefix + "position", lightPos.x, lightPos.y, lightPos.z);
+            shader.SetVec3(lightPrefix + "color", lightColor.r, lightColor.g, lightColor.b);
+            shader.SetFloat(lightPrefix + "intensity", lightIntensity);
+            
+            // 设置距离衰减参数（根据光源强度调整）
+            // 衰减公式: 1.0 / (constant + linear * d + quadratic * d^2)
+            // 使用常见的衰减值组合
+            shader.SetFloat(lightPrefix + "constant", 1.0f);
+            shader.SetFloat(lightPrefix + "linear", 0.09f);
+            shader.SetFloat(lightPrefix + "quadratic", 0.032f);
+        }
 
         // ????????????????????
         objectManager.Render(&shader);
@@ -597,8 +797,21 @@ int main() {
         }
         
         // ?????????????????????
-        auto lights = lightManager.GetLights();
         for (auto light : lights) {
+            glm::vec3 lightPos = light->GetPosition();
+            
+            // 同步太阳球体位置
+            std::string sunName = "Sun_" + light->GetName();
+            auto sunNode = objectManager.FindNode(sunName);
+            if (sunNode) {
+                auto selectedNode = selectionSystem.GetSelectedNode();
+                if (!selectedNode || selectedNode->GetName() != sunName) {
+                    // 如果太阳没有被选中，则同步位置
+                    sunNode->SetPosition(lightPos);
+                }
+            }
+            
+            // 同步指示器球体位置
             std::string indicatorName = "LightIndicator_" + light->GetName();
             auto indicatorNode = objectManager.FindNode(indicatorName);
             if (indicatorNode) {
@@ -643,7 +856,7 @@ int main() {
         }
 
         // ???ImGui???
-        imguiSystem.RenderSidebar(&objectManager, &selectionSystem, &camera, &lightManager, aspectRatio);
+        imguiSystem.RenderSidebar(&objectManager, &selectionSystem, &camera, &lightManager, aspectRatio, nullptr, &fragmentEffectManager);
         
         // ImGui?????????
         imguiSystem.EndFrame();

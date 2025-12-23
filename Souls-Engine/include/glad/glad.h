@@ -77,6 +77,25 @@ typedef void (*PFNGLDRAWELEMENTSPROC)(GLenum mode, GLsizei count, GLenum type, c
 typedef void (*PFNGLDRAWARRAYSPROC)(GLenum mode, GLint first, GLsizei count);
 typedef GLint (*PFNGLGETATTRIBLOCATIONPROC)(GLuint program, const char* name);
 
+// 纹理相关函数指针类型
+typedef void (*PFNGLGENTEXTURESPROC)(GLsizei n, GLuint* textures);
+typedef void (*PFNGLBINDTEXTUREPROC)(GLenum target, GLuint texture);
+typedef void (*PFNGLDELETETEXTURESPROC)(GLsizei n, const GLuint* textures);
+typedef void (*PFNGLTEXIMAGE2DPROC)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data);
+typedef void (*PFNGLTEXPARAMETERIPROC)(GLenum target, GLenum pname, GLint param);
+typedef void (*PFNGLTEXPARAMETERFVPROC)(GLenum target, GLenum pname, const GLfloat* params);
+typedef void (*PFNGLACTIVETEXTUREPROC)(GLenum texture);
+
+// 帧缓冲相关函数指针类型
+typedef void (*PFNGLGENFRAMEBUFFERSPROC)(GLsizei n, GLuint* framebuffers);
+typedef void (*PFNGLBINDFRAMEBUFFERPROC)(GLenum target, GLuint framebuffer);
+typedef void (*PFNGLDELETEFRAMEBUFFERSPROC)(GLsizei n, const GLuint* framebuffers);
+typedef void (*PFNGLFRAMEBUFFERTEXTURE2DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef GLenum (*PFNGLCHECKFRAMEBUFFERSTATUSPROC)(GLenum target);
+typedef void (*PFNGLDRAWBUFFERPROC)(GLenum mode);
+typedef void (*PFNGLREADBUFFERPROC)(GLenum mode);
+typedef void (*PFNGLCULLFACEPROC)(GLenum mode);
+
 // OpenGL函数声明
 GLAPI const GLubyte* glGetString(GLenum name);
 GLAPI void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
@@ -121,6 +140,25 @@ GLAPI void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* i
 GLAPI void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 GLAPI GLint glGetAttribLocation(GLuint program, const char* name);
 
+// 纹理相关函数声明
+GLAPI void glGenTextures(GLsizei n, GLuint* textures);
+GLAPI void glBindTexture(GLenum target, GLuint texture);
+GLAPI void glDeleteTextures(GLsizei n, const GLuint* textures);
+GLAPI void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data);
+GLAPI void glTexParameteri(GLenum target, GLenum pname, GLint param);
+GLAPI void glTexParameterfv(GLenum target, GLenum pname, const GLfloat* params);
+GLAPI void glActiveTexture(GLenum texture);
+
+// 帧缓冲相关函数声明
+GLAPI void glGenFramebuffers(GLsizei n, GLuint* framebuffers);
+GLAPI void glBindFramebuffer(GLenum target, GLuint framebuffer);
+GLAPI void glDeleteFramebuffers(GLsizei n, const GLuint* framebuffers);
+GLAPI void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+GLAPI GLenum glCheckFramebufferStatus(GLenum target);
+GLAPI void glDrawBuffer(GLenum mode);
+GLAPI void glReadBuffer(GLenum mode);
+GLAPI void glCullFace(GLenum mode);
+
 // OpenGL常量
 #define GL_VENDOR                         0x1F00
 #define GL_RENDERER                       0x1F01
@@ -144,6 +182,27 @@ GLAPI GLint glGetAttribLocation(GLuint program, const char* name);
 #define GL_TRIANGLES                      0x0004
 #define GL_UNSIGNED_INT                   0x1405
 #define GL_FLOAT                          0x1406
+
+// 纹理相关常量
+#define GL_TEXTURE_2D                     0x0DE1
+#define GL_TEXTURE0                       0x84C0
+#define GL_TEXTURE_MIN_FILTER             0x2801
+#define GL_TEXTURE_MAG_FILTER             0x2800
+#define GL_TEXTURE_WRAP_S                 0x2802
+#define GL_TEXTURE_WRAP_T                 0x2803
+#define GL_NEAREST                        0x2600
+#define GL_LINEAR                         0x2601
+#define GL_CLAMP_TO_BORDER                0x812D
+#define GL_TEXTURE_BORDER_COLOR           0x1004
+#define GL_DEPTH_COMPONENT                0x1902
+
+// 帧缓冲相关常量
+#define GL_FRAMEBUFFER                    0x8D40
+#define GL_FRAMEBUFFER_COMPLETE           0x8CD5
+#define GL_DEPTH_ATTACHMENT               0x8D00
+#define GL_NONE                           0
+#define GL_FRONT                          0x0404
+#define GL_BACK                           0x0405
 
 #ifdef __cplusplus
 }

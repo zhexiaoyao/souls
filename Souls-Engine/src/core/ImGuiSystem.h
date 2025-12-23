@@ -16,6 +16,8 @@ class ObjectManager;
 class SelectionSystem;
 class Material;
 class LightManager;
+class FPSGameManager;
+class FragmentEffectManager;
 
 // ImGui绯荤粺绠＄悊绫�
 class ImGuiSystem {
@@ -33,7 +35,7 @@ public:
     // 娓呯悊ImGui
     void Shutdown();
 
-    // 寮€濮嬫柊甯�?
+    // 寮€濮嬫柊甯�?
     void BeginFrame();
 
     // 缁撴潫甯у苟娓叉煋
@@ -41,7 +43,9 @@ public:
 
     // 娓叉煋渚ф爮UI
     void RenderSidebar(ObjectManager* objectManager, SelectionSystem* selectionSystem, 
-                       Camera* camera, LightManager* lightManager, float aspectRatio);
+                       Camera* camera, LightManager* lightManager, float aspectRatio,
+                       FPSGameManager* fpsGameManager = nullptr,
+                       FragmentEffectManager* fragmentEffectManager = nullptr);
 
 private:
     GLFWwindow* m_window;
@@ -54,7 +58,7 @@ private:
     bool m_showModelMenu;
 
     // 鐏厜鍙傛暟
-    float m_lightAngle;      // 鍏夌収寮犺锛�0-360搴︼�?
+    float m_lightAngle;      // 鍏夌収寮犺锛�0-360搴︼�?
     float m_lightIntensity;  // 鍏夌収寮哄害锛�0-10锛�
 
     // 杈呭姪鏂规硶
