@@ -1,0 +1,119 @@
+#include "WeaponModel.h"
+#include "ObjectManager.h"
+#include "Camera.h"
+#include "Shader.h"
+#include "../geometry/Cube.h"
+#include "../geometry/Cylinder.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <algorithm>
+#include <limits>
+
+// Avoid max/min macro conflicts on Windows
+#ifdef _WIN32
+#undef max
+#undef min
+#endif
+
+namespace SoulsEngine {
+
+WeaponModel::WeaponModel()
+    : m_weaponNode(nullptr)
+    , m_scopeNode(nullptr)
+    , m_normalPosition(0.5f, -1.0f, 2.0f)  // Bottom-right screen position (camera space, positive z is forward)
+    , m_zoomedPosition(0.0f, 0.0f, 1.0f)   // Near crosshair position (camera forward, will be adjusted for scope alignment)
+    , m_animationProgress(0.0f)
+{
+}
+
+WeaponModel::~WeaponModel() {
+}
+
+void WeaponModel::CreateWeapon(ObjectManager* objectManager) {
+    // Create main gun body (cuboid)
+    auto bodyMesh = std::make_shared<Cube>(0.3f, glm::vec3(0.2f, 0.2f, 0.2f));  // Dark gray
+    auto body = objectManager->CreateNode("WeaponBody", bodyMesh);
+    body->SetPosition(0.0f, 0.0f, 0.0f);
+    body->SetScale(1.5f, 0.3f, 0.3f);
+    
+    // Create barrel (thin cylinder) - increased size
+    auto barrelMesh = std::make_shared<Cylinder>(0.1f, 1.0f, 16, glm::vec3(0.3f, 0.3f, 0.3f));
+    auto barrel = objectManager->CreateNode("WeaponBarrel", barrelMesh);
+    barrel->SetPosition(1.0f, 0.0f, 0.0f);
+    barrel->SetRotation(0.0f, 0.0f, 90.0f);  // Rotate 90 degrees to make cylinder horizontal
+    
+    // Create stock (cuboid)
+    auto stockMesh = std::make_shared<Cube>(0.25f, glm::vec3(0.25f, 0.25f, 0.25f));
+    auto stock = objectManager->CreateNode("WeaponStock", stockMesh);
+    stock->SetPosition(-0.4f, 0.0f, 0.0f);
+    stock->SetScale(0.8f, 0.4f, 0.3f);
+    
+    // Create scope base (larger cylinder for scope body)
+    auto scopeBaseMesh = std::make_shared<Cylinder>(0.12f, 0.4f, 16, glm::vec3(0.15f, 0.15f, 0.15f));
+    auto scopeBase = objectManager->CreateNode("WeaponScopeBase", scopeBaseMesh);
+    scopeBase->SetPosition(0.4f, 0.2f, 0.0f);
+    scopeBase->SetRotation(0.0f, 0.0f, 90.0f);
+    
+    // Create scope ring (outer ring for scope appearance - using a larger cylinder with smaller height)
+    auto scopeRingMesh = std::make_shared<Cylinder>(0.15f, 0.05f, 32, glm::vec3(0.2f, 0.2f, 0.25f));
+    auto scopeRing = objectManager->CreateNode("WeaponScopeRing", scopeRingMesh);
+    scopeRing->SetPosition(0.4f, 0.2f, 0.0f);
+    scopeRing->SetRotation(0.0f, 0.0f, 90.0f);
+    
+    // Create scope lens (inner ring - thinner, for lens effect)
+    auto scopeLensMesh = std::make_shared<Cylinder>(0.08f, 0.02f, 32, glm::vec3(0.05f, 0.05f, 0.1f));
+    auto scopeLens = objectManager->CreateNode("WeaponScopeLens", scopeLensMesh);
+    scopeLens->SetPosition(0.4f, 0.2f, 0.0f);
+    scopeLens->SetRotation(0.0f, 0.0f, 90.0f);
+    
+    // Attach scope parts as children of main body
+    body->AddChild(scopeBase);
+    body->AddChild(scopeRing);
+    body->AddChild(scopeLens);
+    
+    // Store scope node reference (use scopeBase as main scope node)
+    m_scopeNode = scopeBase;
+    
+    // Attach barrel and stock as children of main body
+    body->AddChild(barrel);
+    body->AddChild(stock);
+    
+    m_weaponNode = body;
+    m_weaponNode->SetPosition(m_normalPosition);
+    m_weaponNode->SetRotation(5.0f, 0.0f, -10.0f);  // Initial slight tilt
+}
+
+void WeaponModel::Update(bool isZoomed, int windowWidth, int windowHeight) {
+    if (!m_weaponNode) return;
+    
+    // Smooth animation transition
+    float targetProgress = isZoomed ? 1.0f : 0.0f;
+    float animationSpeed = 10.0f;  // Animation speed
+    
+    // Use smoother interpolation (use parentheses to avoid Windows macro conflicts)
+    if (m_animationProgress < targetProgress) {
+        m_animationProgress = (std::min)(m_animationProgress + animationSpeed * 0.016f, targetProgress);
+    } else if (m_animationProgress > targetProgress) {
+        m_animationProgress = (std::max)(m_animationProgress - animationSpeed * 0.016f, targetProgress);
+    }
+    
+    // Interpolate current position
+    glm::vec3 currentPos = glm::mix(m_normalPosition, m_zoomedPosition, m_animationProgress);
+    m_weaponNode->SetPosition(currentPos);
+    
+    // Slightly rotate weapon when zoomed for more natural feel
+    float rotX = glm::mix(5.0f, 0.0f, m_animationProgress);
+    float rotZ = glm::mix(-10.0f, 0.0f, m_animationProgress);
+    m_weaponNode->SetRotation(rotX, 0.0f, rotZ);
+    
+    // Update animation progress (for external access)
+    m_animationProgress = m_animationProgress;  // Keep current value
+}
+
+void WeaponModel::Render(Shader* shader, const Camera& camera, float aspectRatio) {
+    // Weapon is rendered through ObjectManager, no additional operations needed here
+    // Weapon node is already added to ObjectManager
+}
+
+} // namespace SoulsEngine
+

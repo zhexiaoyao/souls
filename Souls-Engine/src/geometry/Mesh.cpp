@@ -77,10 +77,3 @@ void Mesh::InitFromFloatVertices(const std::vector<float>& vertices) {
 }
 
 } // namespace SoulsEngine
-
-// 初始化方法的实现（供导入器调用）
-void SoulsEngine::Mesh::InitFromFloatVertices(const std::vector<float>& vertices) {
-    // 直接调用内部的 SetupMesh（复用已有的顶点缓冲初始化逻辑）
-    SetupMesh(vertices);
-}
-
