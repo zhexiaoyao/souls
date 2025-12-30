@@ -13,12 +13,6 @@ struct GLFWwindow;
 
 namespace SoulsEngine {
 
-// Target state enum
-enum class TargetState {
-    Active,      // 正常状态
-    Fragmenting  // 击碎中（正在碎裂）
-};
-
 // Target information structure
 struct Target {
     std::shared_ptr<SceneNode> node;
@@ -26,18 +20,6 @@ struct Target {
     float radius;  // Target radius
     bool isActive; // Is active
     int targetId;  // Target ID
-    TargetState state;  // Target state (Active or Fragmenting)
-};
-
-// Fragment information structure (for target destruction effect)
-struct Fragment {
-    std::shared_ptr<SceneNode> node;
-    glm::vec3 position;
-    glm::vec3 velocity;      // Fragment velocity
-    glm::vec3 angularVelocity; // Fragment rotation speed
-    float scale;             // Current scale (starts at 1.0, decreases to 0)
-    float lifetime;          // Time remaining before removal
-    bool isActive;           // Is active
 };
 
 // Wall information structure (for collision detection)
@@ -77,12 +59,6 @@ public:
 
     // Get all targets
     const std::vector<Target>& GetTargets() const { return m_targets; }
-    
-    // Get targets by state
-    std::vector<Target> GetTargetsByState(TargetState state) const;
-    
-    // Clean up targets that are Fragmenting and have no fragments left
-    void CleanupFragmentingTargets();
 
 private:
     // Spawn target
@@ -96,12 +72,6 @@ private:
 
     // Remove target
     void RemoveTarget(int targetId);
-
-    // Create fragments when target is destroyed
-    void CreateFragments(const Target& target, const glm::vec3& hitPoint);
-
-    // Update fragments (movement, rotation, scaling)
-    void UpdateFragments(float deltaTime);
 
     // Create walls
     void CreateWalls();
@@ -118,7 +88,6 @@ private:
     // Game objects
     std::vector<Target> m_targets;
     std::vector<Wall> m_walls;
-    std::vector<Fragment> m_fragments;  // Fragments from destroyed targets
 
     // Game state
     int m_score;

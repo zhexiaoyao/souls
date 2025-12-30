@@ -1,6 +1,5 @@
 #include "FPSGameManager.h"
 #include "../geometry/Disk.h"
-#include "../geometry/Cylinder.h"
 #include "../geometry/Cube.h"
 #include "Material.h"
 #include <GLFW/glfw3.h>
@@ -60,7 +59,6 @@ void FPSGameManager::Initialize() {
     m_objectManager->Clear();
     m_targets.clear();
     m_walls.clear();
-    m_fragments.clear();
 
     // Reset game state
     m_score = 0;
@@ -187,12 +185,6 @@ void FPSGameManager::Update(float deltaTime) {
         SpawnTarget();
         m_targetSpawnTimer = 0.0f;
     }
-
-    // Update fragments (movement, rotation, scaling)
-    UpdateFragments(deltaTime);
-    
-    // Clean up targets that are Fragmenting and have no fragments left
-    CleanupFragmentingTargets();
 }
 
 void FPSGameManager::ProcessPlayerInput(float deltaTime, GLFWwindow* window, int windowWidth, int windowHeight) {
@@ -365,17 +357,8 @@ void FPSGameManager::ProcessShoot(int windowWidth, int windowHeight) {
                     std::cout << "Target hit! +1 point (Total: " << m_score << ")" << std::endl;
                 }
                 
-                // Create fragments and set target state to Fragmenting
-                CreateFragments(target, hitPoint);
-                
-                // Set target state to Fragmenting instead of removing immediately
-                target.state = TargetState::Fragmenting;
-                target.isActive = false;  // 标记为非激活，但保留在列表中
-                
-                // Hide the target node (make it invisible)
-                target.node->SetScale(0.0f, 0.0f, 0.0f);
-                
-                std::cout << "Target #" << target.targetId << " state changed to Fragmenting" << std::endl;
+                // Remove target
+                RemoveTarget(target.targetId);
                 break;
             }
         }
@@ -438,43 +421,26 @@ void FPSGameManager::SpawnTarget() {
         m_arenaMinZ + 2.0f, m_arenaMaxZ - 2.0f
     );
 
-    // Create 3D disk target (red) - using a thin cylinder to create a thick disk
+    // Create disk target (red)
     float targetRadius = 1.0f;
-    float targetThickness = 0.1f;  // Thickness of the disk (thin cylinder height)
-    auto targetMesh = std::make_shared<Cylinder>(targetRadius, targetThickness, 36, glm::vec3(1.0f, 0.0f, 0.0f));  // Red
+    auto targetMesh = std::make_shared<Disk>(targetRadius, 36, glm::vec3(1.0f, 0.0f, 0.0f));  // Red
     auto targetNode = m_objectManager->CreateNode("Target_" + std::to_string(m_nextTargetId), targetMesh);
     targetNode->SetPosition(position);
     
     // Rotate target to face camera direction (make target face player initial position)
-    // Cylinder default: height along Y-axis, circular faces in XZ plane
-    // We want the circular face to face the camera
+    // Disk default is in XY plane (normal is Z-axis), we need to make it face camera
     glm::vec3 cameraPos = m_camera->GetPosition();
     glm::vec3 toCamera = cameraPos - position;
     
-    // Calculate rotation to make cylinder's circular face face camera
+    // Calculate Y-axis rotation (horizontal rotation)
     if (glm::length(toCamera) > 0.001f) {
-        // Normalize direction
-        glm::vec3 direction = glm::normalize(toCamera);
+        float yaw = atan2(toCamera.x, toCamera.z) * 180.0f / 3.14159265359f;
+        targetNode->SetRotation(0.0f, yaw, 0.0f);
         
-        // Cylinder's default orientation: height along Y-axis
-        // To make circular face face camera, we need to:
-        // 1. Rotate 90 degrees around X-axis to make height along Z-axis (circular face in XY plane)
-        // 2. Then rotate to face camera direction
-        
-        // Calculate Y-axis rotation (horizontal/yaw)
-        float yaw = atan2(direction.x, direction.z) * 180.0f / 3.14159265359f;
-        
-        // Calculate X-axis rotation (vertical/pitch)
-        float horizontalDist = sqrt(direction.x * direction.x + direction.z * direction.z);
-        float pitch = atan2(-direction.y, horizontalDist) * 180.0f / 3.14159265359f;
-        
-        // First rotate 90 degrees around X-axis to orient cylinder horizontally
-        // Then apply pitch and yaw to face camera
-        // Note: pitch is applied first (around X), then yaw (around Y)
-        targetNode->SetRotation(90.0f + pitch, yaw, 0.0f);
-    } else {
-        // Default orientation: horizontal (circular face facing forward)
-        targetNode->SetRotation(90.0f, 0.0f, 0.0f);
+        // Calculate X-axis rotation (vertical rotation)
+        float horizontalDist = sqrt(toCamera.x * toCamera.x + toCamera.z * toCamera.z);
+        float pitch = atan2(-toCamera.y, horizontalDist) * 180.0f / 3.14159265359f;
+        targetNode->SetRotation(pitch, yaw, 0.0f);
     }
 
     Target target;
@@ -483,7 +449,6 @@ void FPSGameManager::SpawnTarget() {
     target.radius = targetRadius;
     target.isActive = true;
     target.targetId = m_nextTargetId;
-    target.state = TargetState::Active;  // 初始状态为正常
 
     m_targets.push_back(target);
     m_nextTargetId++;
@@ -500,166 +465,6 @@ void FPSGameManager::RemoveTarget(int targetId) {
             m_targets.erase(it);
             std::cout << "Target #" << targetId << " removed" << std::endl;
             break;
-        }
-    }
-}
-
-void FPSGameManager::CreateFragments(const Target& target, const glm::vec3& hitPoint) {
-    // Create multiple fragments from the target
-    int fragmentCount = 12;  // Number of fragments (increased for better effect)
-    float fragmentSize = target.radius * 0.25f;  // Size of each fragment
-    glm::vec3 targetPos = target.position;
-    
-    // Get target's transform to maintain orientation
-    glm::mat4 targetTransform = target.node->GetWorldTransform();
-    
-    // Get target's local coordinate system (for cylinder, forward is along height/Y-axis)
-    // After rotation, we need to find the right and up vectors on the circular face
-    glm::vec3 targetForward = glm::normalize(glm::vec3(targetTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
-    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
-    
-    // Calculate right and up vectors on the circular face
-    glm::vec3 targetRight = glm::normalize(glm::cross(targetForward, worldUp));
-    if (glm::length(targetRight) < 0.1f) {
-        // If forward is parallel to world up, use different vector
-        glm::vec3 worldRight(1.0f, 0.0f, 0.0f);
-        targetRight = glm::normalize(glm::cross(targetForward, worldRight));
-    }
-    glm::vec3 targetUp = glm::normalize(glm::cross(targetRight, targetForward));
-    
-    // Create fragments in a circular pattern on the target's circular face
-    for (int i = 0; i < fragmentCount; ++i) {
-        // Calculate fragment position on the target's circular face
-        float angle = (2.0f * 3.14159265359f * i) / fragmentCount;
-        float distance = target.radius * (0.4f + (i % 4) * 0.15f);  // Vary distance from center
-        
-        // Position on the circular face (in target's local space)
-        glm::vec3 localOffset = targetRight * (cos(angle) * distance) + 
-                               targetUp * (sin(angle) * distance);
-        
-        // World position of fragment
-        glm::vec3 worldPos = targetPos + localOffset;
-        
-        // Create fragment mesh (small cube)
-        glm::vec3 fragmentColor(1.0f, 0.0f, 0.0f);  // Red, same as target
-        auto fragmentMesh = std::make_shared<Cube>(fragmentSize, fragmentColor);
-        std::string fragmentName = "Fragment_" + std::to_string(target.targetId) + "_" + std::to_string(i);
-        auto fragmentNode = m_objectManager->CreateNode(fragmentName, fragmentMesh);
-        
-        // Set initial position
-        fragmentNode->SetPosition(worldPos);
-        
-        // Random initial rotation for more dynamic effect
-        std::uniform_real_distribution<float> rotDist(0.0f, 360.0f);
-        fragmentNode->SetRotation(rotDist(m_gen), rotDist(m_gen), rotDist(m_gen));
-        
-        // Calculate velocity (explosion effect from hit point)
-        glm::vec3 direction = glm::normalize(worldPos - hitPoint);
-        float speed = 4.0f + (i % 4) * 0.8f;  // Vary speed for more dynamic effect
-        glm::vec3 velocity = direction * speed;
-        
-        // Add some random upward velocity
-        std::uniform_real_distribution<float> upVelDist(1.0f, 3.0f);
-        velocity.y += upVelDist(m_gen);
-        
-        // Random angular velocity for rotation (degrees per second)
-        std::uniform_real_distribution<float> angVelDist(-360.0f, 360.0f);
-        glm::vec3 angularVelocity(
-            angVelDist(m_gen),
-            angVelDist(m_gen),
-            angVelDist(m_gen)
-        );
-        
-        // Create fragment
-        Fragment fragment;
-        fragment.node = fragmentNode;
-        fragment.position = worldPos;
-        fragment.velocity = velocity;
-        fragment.angularVelocity = angularVelocity;
-        fragment.scale = 1.0f;  // Start at full size
-        fragment.lifetime = 2.5f;  // 2.5 seconds lifetime
-        fragment.isActive = true;
-        
-        m_fragments.push_back(fragment);
-    }
-    
-    std::cout << "Created " << fragmentCount << " fragments from target #" << target.targetId << std::endl;
-}
-
-void FPSGameManager::UpdateFragments(float deltaTime) {
-    // Update each fragment
-    for (auto it = m_fragments.begin(); it != m_fragments.end();) {
-        if (!it->isActive) {
-            ++it;
-            continue;
-        }
-        
-        // Update lifetime
-        it->lifetime -= deltaTime;
-        
-        // Update position (apply velocity and gravity)
-        it->velocity.y += m_gravity * deltaTime;  // Apply gravity
-        it->position += it->velocity * deltaTime;
-        
-        // Update rotation
-        glm::vec3 currentRotation = it->node->GetRotation();
-        currentRotation += it->angularVelocity * deltaTime;
-        it->node->SetRotation(currentRotation);
-        
-        // Update scale (gradually shrink)
-        float shrinkSpeed = 0.5f;  // Shrink rate per second
-        it->scale = (std::max)(0.0f, it->scale - shrinkSpeed * deltaTime);
-        it->node->SetScale(it->scale, it->scale, it->scale);
-        
-        // Update position
-        it->node->SetPosition(it->position);
-        
-        // Remove fragment if lifetime expired or scale is 0
-        if (it->lifetime <= 0.0f || it->scale <= 0.0f) {
-            m_objectManager->RemoveNode(it->node);
-            it = m_fragments.erase(it);
-        } else {
-            ++it;
-        }
-    }
-}
-
-std::vector<Target> FPSGameManager::GetTargetsByState(TargetState state) const {
-    std::vector<Target> result;
-    for (const auto& target : m_targets) {
-        if (target.state == state) {
-            result.push_back(target);
-        }
-    }
-    return result;
-}
-
-void FPSGameManager::CleanupFragmentingTargets() {
-    // Check each Fragmenting target to see if it has any fragments left
-    for (auto it = m_targets.begin(); it != m_targets.end();) {
-        if (it->state == TargetState::Fragmenting) {
-            // Check if there are any fragments for this target
-            bool hasFragments = false;
-            for (const auto& fragment : m_fragments) {
-                // Fragment name format: "Fragment_<targetId>_<index>"
-                std::string fragmentName = fragment.node->GetName();
-                std::string targetIdStr = std::to_string(it->targetId);
-                if (fragmentName.find("Fragment_" + targetIdStr + "_") == 0) {
-                    hasFragments = true;
-                    break;
-                }
-            }
-            
-            // If no fragments left, remove the target
-            if (!hasFragments) {
-                std::cout << "Target #" << it->targetId << " fragments cleared, removing target" << std::endl;
-                m_objectManager->RemoveNode(it->node);
-                it = m_targets.erase(it);
-            } else {
-                ++it;
-            }
-        } else {
-            ++it;
         }
     }
 }

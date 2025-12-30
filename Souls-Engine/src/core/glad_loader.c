@@ -57,25 +57,6 @@ static PFNGLDRAWELEMENTSPROC glad_glDrawElements = NULL;
 static PFNGLDRAWARRAYSPROC glad_glDrawArrays = NULL;
 static PFNGLGETATTRIBLOCATIONPROC glad_glGetAttribLocation = NULL;
 
-// 纹理相关函数指针
-static PFNGLGENTEXTURESPROC glad_glGenTextures = NULL;
-static PFNGLBINDTEXTUREPROC glad_glBindTexture = NULL;
-static PFNGLDELETETEXTURESPROC glad_glDeleteTextures = NULL;
-static PFNGLTEXIMAGE2DPROC glad_glTexImage2D = NULL;
-static PFNGLTEXPARAMETERIPROC glad_glTexParameteri = NULL;
-static PFNGLTEXPARAMETERFVPROC glad_glTexParameterfv = NULL;
-static PFNGLACTIVETEXTUREPROC glad_glActiveTexture = NULL;
-
-// 帧缓冲相关函数指针
-static PFNGLGENFRAMEBUFFERSPROC glad_glGenFramebuffers = NULL;
-static PFNGLBINDFRAMEBUFFERPROC glad_glBindFramebuffer = NULL;
-static PFNGLDELETEFRAMEBUFFERSPROC glad_glDeleteFramebuffers = NULL;
-static PFNGLFRAMEBUFFERTEXTURE2DPROC glad_glFramebufferTexture2D = NULL;
-static PFNGLCHECKFRAMEBUFFERSTATUSPROC glad_glCheckFramebufferStatus = NULL;
-static PFNGLDRAWBUFFERPROC glad_glDrawBuffer = NULL;
-static PFNGLREADBUFFERPROC glad_glReadBuffer = NULL;
-static PFNGLCULLFACEPROC glad_glCullFace = NULL;
-
 // 加载OpenGL函数
 int gladLoadGLLoader(GLADloadproc load) {
     if (load == NULL) {
@@ -136,25 +117,6 @@ int gladLoadGLLoader(GLADloadproc load) {
     glad_glDrawElements = (PFNGLDRAWELEMENTSPROC)load("glDrawElements");
     glad_glDrawArrays = (PFNGLDRAWARRAYSPROC)load("glDrawArrays");
     glad_glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)load("glGetAttribLocation");
-    
-    // 加载纹理相关函数
-    glad_glGenTextures = (PFNGLGENTEXTURESPROC)load("glGenTextures");
-    glad_glBindTexture = (PFNGLBINDTEXTUREPROC)load("glBindTexture");
-    glad_glDeleteTextures = (PFNGLDELETETEXTURESPROC)load("glDeleteTextures");
-    glad_glTexImage2D = (PFNGLTEXIMAGE2DPROC)load("glTexImage2D");
-    glad_glTexParameteri = (PFNGLTEXPARAMETERIPROC)load("glTexParameteri");
-    glad_glTexParameterfv = (PFNGLTEXPARAMETERFVPROC)load("glTexParameterfv");
-    glad_glActiveTexture = (PFNGLACTIVETEXTUREPROC)load("glActiveTexture");
-    
-    // 加载帧缓冲相关函数
-    glad_glGenFramebuffers = (PFNGLGENFRAMEBUFFERSPROC)load("glGenFramebuffers");
-    glad_glBindFramebuffer = (PFNGLBINDFRAMEBUFFERPROC)load("glBindFramebuffer");
-    glad_glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERSPROC)load("glDeleteFramebuffers");
-    glad_glFramebufferTexture2D = (PFNGLFRAMEBUFFERTEXTURE2DPROC)load("glFramebufferTexture2D");
-    glad_glCheckFramebufferStatus = (PFNGLCHECKFRAMEBUFFERSTATUSPROC)load("glCheckFramebufferStatus");
-    glad_glDrawBuffer = (PFNGLDRAWBUFFERPROC)load("glDrawBuffer");
-    glad_glReadBuffer = (PFNGLREADBUFFERPROC)load("glReadBuffer");
-    glad_glCullFace = (PFNGLCULLFACEPROC)load("glCullFace");
 
     return 1;
 }
@@ -216,25 +178,6 @@ int gladLoadGLUserPtr(GLADuserptrloadfunc load, void* userptr) {
     glad_glDrawElements = (PFNGLDRAWELEMENTSPROC)load(userptr, "glDrawElements");
     glad_glDrawArrays = (PFNGLDRAWARRAYSPROC)load(userptr, "glDrawArrays");
     glad_glGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)load(userptr, "glGetAttribLocation");
-    
-    // 加载纹理相关函数
-    glad_glGenTextures = (PFNGLGENTEXTURESPROC)load(userptr, "glGenTextures");
-    glad_glBindTexture = (PFNGLBINDTEXTUREPROC)load(userptr, "glBindTexture");
-    glad_glDeleteTextures = (PFNGLDELETETEXTURESPROC)load(userptr, "glDeleteTextures");
-    glad_glTexImage2D = (PFNGLTEXIMAGE2DPROC)load(userptr, "glTexImage2D");
-    glad_glTexParameteri = (PFNGLTEXPARAMETERIPROC)load(userptr, "glTexParameteri");
-    glad_glTexParameterfv = (PFNGLTEXPARAMETERFVPROC)load(userptr, "glTexParameterfv");
-    glad_glActiveTexture = (PFNGLACTIVETEXTUREPROC)load(userptr, "glActiveTexture");
-    
-    // 加载帧缓冲相关函数
-    glad_glGenFramebuffers = (PFNGLGENFRAMEBUFFERSPROC)load(userptr, "glGenFramebuffers");
-    glad_glBindFramebuffer = (PFNGLBINDFRAMEBUFFERPROC)load(userptr, "glBindFramebuffer");
-    glad_glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERSPROC)load(userptr, "glDeleteFramebuffers");
-    glad_glFramebufferTexture2D = (PFNGLFRAMEBUFFERTEXTURE2DPROC)load(userptr, "glFramebufferTexture2D");
-    glad_glCheckFramebufferStatus = (PFNGLCHECKFRAMEBUFFERSTATUSPROC)load(userptr, "glCheckFramebufferStatus");
-    glad_glDrawBuffer = (PFNGLDRAWBUFFERPROC)load(userptr, "glDrawBuffer");
-    glad_glReadBuffer = (PFNGLREADBUFFERPROC)load(userptr, "glReadBuffer");
-    glad_glCullFace = (PFNGLCULLFACEPROC)load(userptr, "glCullFace");
 
     return 1;
 }
@@ -474,98 +417,5 @@ GLint glGetAttribLocation(GLuint program, const char* name) {
         return glad_glGetAttribLocation(program, name);
     }
     return -1;
-}
-
-// 纹理相关函数实现
-void glGenTextures(GLsizei n, GLuint* textures) {
-    if (glad_glGenTextures != NULL) {
-        glad_glGenTextures(n, textures);
-    }
-}
-
-void glBindTexture(GLenum target, GLuint texture) {
-    if (glad_glBindTexture != NULL) {
-        glad_glBindTexture(target, texture);
-    }
-}
-
-void glDeleteTextures(GLsizei n, const GLuint* textures) {
-    if (glad_glDeleteTextures != NULL) {
-        glad_glDeleteTextures(n, textures);
-    }
-}
-
-void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data) {
-    if (glad_glTexImage2D != NULL) {
-        glad_glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
-    }
-}
-
-void glTexParameteri(GLenum target, GLenum pname, GLint param) {
-    if (glad_glTexParameteri != NULL) {
-        glad_glTexParameteri(target, pname, param);
-    }
-}
-
-void glTexParameterfv(GLenum target, GLenum pname, const GLfloat* params) {
-    if (glad_glTexParameterfv != NULL) {
-        glad_glTexParameterfv(target, pname, params);
-    }
-}
-
-void glActiveTexture(GLenum texture) {
-    if (glad_glActiveTexture != NULL) {
-        glad_glActiveTexture(texture);
-    }
-}
-
-// 帧缓冲相关函数实现
-void glGenFramebuffers(GLsizei n, GLuint* framebuffers) {
-    if (glad_glGenFramebuffers != NULL) {
-        glad_glGenFramebuffers(n, framebuffers);
-    }
-}
-
-void glBindFramebuffer(GLenum target, GLuint framebuffer) {
-    if (glad_glBindFramebuffer != NULL) {
-        glad_glBindFramebuffer(target, framebuffer);
-    }
-}
-
-void glDeleteFramebuffers(GLsizei n, const GLuint* framebuffers) {
-    if (glad_glDeleteFramebuffers != NULL) {
-        glad_glDeleteFramebuffers(n, framebuffers);
-    }
-}
-
-void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) {
-    if (glad_glFramebufferTexture2D != NULL) {
-        glad_glFramebufferTexture2D(target, attachment, textarget, texture, level);
-    }
-}
-
-GLenum glCheckFramebufferStatus(GLenum target) {
-    if (glad_glCheckFramebufferStatus != NULL) {
-        return glad_glCheckFramebufferStatus(target);
-    }
-    return 0;
-}
-
-void glDrawBuffer(GLenum mode) {
-    if (glad_glDrawBuffer != NULL) {
-        glad_glDrawBuffer(mode);
-    }
-}
-
-void glReadBuffer(GLenum mode) {
-    if (glad_glReadBuffer != NULL) {
-        glad_glReadBuffer(mode);
-    }
-}
-
-void glCullFace(GLenum mode) {
-    if (glad_glCullFace != NULL) {
-        glad_glCullFace(mode);
-    }
 }
 

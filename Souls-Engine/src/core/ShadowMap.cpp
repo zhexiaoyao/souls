@@ -1,5 +1,5 @@
-#include <glad/glad.h>
 #include "ShadowMap.h"
+#include <glad/glad.h>
 #include <iostream>
 
 namespace SoulsEngine {
@@ -82,28 +82,20 @@ glm::mat4 ShadowMap::GetLightSpaceMatrix(const glm::vec3& lightPos,
                                           float farPlane,
                                           float orthoSize) const {
     // 计算光源的视图矩阵
-    // 使用场景中心作为目标点，确保阴影贴图覆盖整个场景
-    // 对于从上往下的光源，场景中心通常在(0, 0, 0)附近
-    glm::vec3 sceneCenter(0.0f, 0.0f, 0.0f);  // 场景中心
-    glm::vec3 lightTarget = sceneCenter;  // 光源看向场景中心
-    
-    // 计算光源位置（使用实际光源位置，但确保覆盖整个场景）
-    // 对于点光源，使用实际位置；对于方向光，位置应该足够远
-    glm::vec3 actualLightPos = lightPos;
+    // lightDir是光源方向（从光源指向目标），所以target = lightPos + lightDir
+    glm::vec3 lightTarget = lightPos + lightDir * 10.0f;  // 确保target在合理距离
     
     // 计算up向量（确保与lightDir不平行）
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
     if (abs(glm::dot(lightDir, up)) > 0.9f) {
         // 如果lightDir几乎与up平行，使用另一个up向量
-        up = glm::vec3(1.0f, 0.0f, 0.0f);
+        up = glm::vec3(0.0f, 0.0f, 1.0f);
     }
     
-    // 创建光源视图矩阵（从光源位置看向场景中心）
-    glm::mat4 lightView = glm::lookAt(actualLightPos, lightTarget, up);
+    glm::mat4 lightView = glm::lookAt(lightPos, lightTarget, up);
     
     // 正交投影矩阵（适合方向光）
     // 使用更大的正交投影范围以覆盖整个场景
-    // 注意：orthoSize是半宽/半高，所以总范围是2*orthoSize
     glm::mat4 lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane);
     
     // 光源空间矩阵 = 投影矩阵 * 视图矩阵

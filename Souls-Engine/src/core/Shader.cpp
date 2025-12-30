@@ -2,7 +2,6 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <unordered_set>
 
 namespace SoulsEngine {
 
@@ -138,17 +137,7 @@ GLint Shader::GetUniformLocation(const std::string& name) const {
     // 获取位置并缓存
     GLint location = glGetUniformLocation(m_programID, name.c_str());
     if (location == -1) {
-        // 只在调试模式下输出警告，避免对已知不存在的uniform（如旧代码遗留）产生噪音
-        // 注意：某些uniform可能在某些着色器中不存在，这是正常的
-        // 如果uniform确实需要，检查着色器代码和uniform名称是否匹配
-        static std::unordered_set<std::string> warnedUniforms;
-        if (warnedUniforms.find(name) == warnedUniforms.end()) {
-            // 忽略已知的旧uniform名称（这些是旧代码遗留，不再使用）
-            if (name != "lightPos" && name != "lightColor") {
-                std::cerr << "Warning: Uniform '" << name << "' doesn't exist!" << std::endl;
-            }
-            warnedUniforms.insert(name);
-        }
+        std::cerr << "Warning: Uniform '" << name << "' doesn't exist!" << std::endl;
     }
     m_uniformLocationCache[name] = location;
     return location;

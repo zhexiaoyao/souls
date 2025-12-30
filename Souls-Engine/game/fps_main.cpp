@@ -13,11 +13,8 @@
 #include "../src/core/Light.h"
 #include "../src/core/LightManager.h"
 #include "../src/core/Material.h"
-#include "../src/core/ShadowMap.h"
 #include "../src/core/SceneNode.h"
 #include "../src/geometry/Mesh.h"
-#include "../src/geometry/Sphere.h"
-#include "../src/io/OBJExporter.h"
 #include "../src/core/OpenGLContext.h"  // For GL_CHECK_ERROR macro
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -204,29 +201,17 @@ int main() {
     // Create light manager
     SoulsEngine::LightManager lightManager;
     
-    // Add a main light (directional light from above)
+    // Add an ambient light
     auto light = lightManager.AddLight(
-        glm::vec3(0.0f, 15.0f, 0.0f),  // Position (higher up for better coverage)
-        glm::vec3(1.0f, 1.0f, 1.0f),  // Color (white)
-        3.0f,                          // Intensity (increased for better visibility)
-        360.0f                         // Angle (360 = omnidirectional)
+        glm::vec3(0.0f, 10.0f, 0.0f),  // Position
+        glm::vec3(1.0f, 1.0f, 1.0f),  // Color
+        1.75f,                          // Intensity
+        360.0f                         // Angle
     );
     if (light) {
         light->SetName("MainLight");
-        glm::vec3 lightPos = light->GetPosition();
-        std::cout << "Light created at (" << lightPos.x << ", " << lightPos.y << ", " << lightPos.z 
-                  << ") with intensity " << light->GetIntensity() << std::endl;
-        
-        // Create sun sphere (orange-red colored sphere) at light position
-        glm::vec3 sunColor(1.0f, 0.5f, 0.0f);  // Orange-red color (RGB: 255, 128, 0)
-        auto sunMesh = std::make_shared<SoulsEngine::Sphere>(0.6f, 32, 16, sunColor);  // Larger sphere (0.6 radius) for sun
-        auto sunName = "Sun_" + light->GetName();
-        auto sunNode = objectManager.CreateNode(sunName, sunMesh);
-        sunNode->SetPosition(lightPos);
-        std::cout << "Sun sphere created at light position" << std::endl;
-    } else {
-        std::cerr << "Warning: Failed to create light!" << std::endl;
     }
+    std::cout << "Light created" << std::endl;
 
     // Create FPS game manager
     std::cout << "Creating FPS game manager..." << std::endl;
@@ -238,57 +223,7 @@ int main() {
     // Create weapon model
     SoulsEngine::WeaponModel weaponModel;
     weaponModel.CreateWeapon(&objectManager);
-    
-    // Save weapon model to file
-    auto weaponNode = weaponModel.GetWeaponNode();
-    if (weaponNode) {
-        // Create assets/models directory if it doesn't exist
-        std::string weaponModelPath = "assets/models/weapon.obj";
-        if (SoulsEngine::OBJExporter::ExportWeaponModel(weaponNode, weaponModelPath)) {
-            std::cout << "Weapon model saved to: " << weaponModelPath << std::endl;
-        } else {
-            std::cout << "Warning: Failed to save weapon model" << std::endl;
-        }
-    }
-    weaponModel.CreateWeapon(&objectManager);
     std::cout << "Weapon model created" << std::endl;
-
-    // Create shadow map
-    SoulsEngine::ShadowMap shadowMap(2048, 2048);
-    bool shadowMapInitialized = false;
-    if (shadowMap.Initialize()) {
-        shadowMapInitialized = true;
-        std::cout << "Shadow Map initialized successfully!" << std::endl;
-    } else {
-        std::cerr << "Warning: Failed to initialize shadow map!" << std::endl;
-    }
-
-    // Create depth shader (for generating shadow map)
-    SoulsEngine::Shader depthShader;
-    std::vector<std::string> depthShaderPaths = {
-        "assets/shaders/",
-        "../assets/shaders/",
-        "../../assets/shaders/",
-        "../../../assets/shaders/",
-        "build/bin/Debug/assets/shaders/",
-        "build/bin/Release/assets/shaders/"
-    };
-    std::string depthVertPath, depthFragPath;
-    bool depthShaderFound = false;
-    for (const auto& basePath : depthShaderPaths) {
-        depthVertPath = basePath + "depth.vert";
-        depthFragPath = basePath + "depth.frag";
-        if (FileExists(depthVertPath) && FileExists(depthFragPath)) {
-            depthShaderFound = true;
-            break;
-        }
-    }
-    if (depthShaderFound && depthShader.LoadFromFiles(depthVertPath, depthFragPath)) {
-        std::cout << "Depth shader loaded successfully!" << std::endl;
-    } else {
-        std::cerr << "Warning: Depth shader not found, shadows will be disabled" << std::endl;
-        depthShaderFound = false;
-    }
 
     // Initialize ImGui (for game UI)
     ImGui::CreateContext();
@@ -336,42 +271,6 @@ int main() {
         // Update weapon model position (based on zoom state)
         weaponModel.Update(fpsGameManager.IsZoomed(), window.GetWidth(), window.GetHeight());
 
-        // ========== First Pass: Render Shadow Map (from light's perspective) ==========
-        auto lights = lightManager.GetLights();
-        glm::mat4 lightSpaceMatrix;
-        bool shadowsEnabled = false;
-        if (shadowMapInitialized && depthShaderFound && !lights.empty()) {
-            auto firstLight = lights[0];
-            glm::vec3 lightPos = firstLight->GetPosition();
-            // Calculate light direction (light shines downward toward scene center)
-            // For directional light, use downward direction
-            glm::vec3 lightDir = glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f));
-            
-            // Calculate light space matrix
-            // Increase orthoSize to cover the entire arena (arena size is ~36 units, so use 40+ for safety)
-            // Also increase farPlane to ensure walls are included
-            lightSpaceMatrix = shadowMap.GetLightSpaceMatrix(lightPos, lightDir, 0.1f, 150.0f, 45.0f);
-            
-            // Begin rendering to shadow map
-            shadowMap.BeginRender();
-            
-            // Use depth shader
-            depthShader.Use();
-            depthShader.SetMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
-            
-            // Render scene to shadow map
-            objectManager.Render(&depthShader);
-            
-            // End shadow map rendering
-            shadowMap.EndRender();
-            
-            // Restore viewport
-            glViewport(0, 0, window.GetWidth(), window.GetHeight());
-            
-            shadowsEnabled = true;
-        }
-
-        // ========== Second Pass: Normal Rendering (with shadow map) ==========
         // Clear buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -385,70 +284,22 @@ int main() {
         // Pass matrices to Shader
         shader.SetMat4("view", glm::value_ptr(view));
         shader.SetMat4("projection", glm::value_ptr(projection));
-        shader.SetMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
-        
-        // Set shadow-related uniforms
-        shader.SetBool("useShadows", shadowsEnabled);
-        if (shadowsEnabled) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, shadowMap.GetDepthTexture());
-            shader.SetInt("shadowMap", 0);
-        }
         
         // Update scene
         objectManager.Update();
         
-        // Set light parameters - ensure only one light (the sun)
-        glm::vec3 viewPos = camera.GetPosition();
-        
-        // Ensure only one light exists (remove any extra lights that might have been added)
-        while (lights.size() > 1) {
-            lightManager.RemoveLight(lights.back());
-            lights = lightManager.GetLights();
-        }
-        
-        int numLights = std::min(static_cast<int>(lights.size()), 1);  // Only one light (the sun)
-        
-        shader.SetInt("numLights", numLights);
-        // Global ambient light (independent of light sources, not affected by distance attenuation)
-        // Reduced ambient light to make direct lighting more visible
-        shader.SetVec3("globalAmbient", 0.1f, 0.1f, 0.1f);  // I_a: Global ambient light intensity (reduced)
-        shader.SetVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
-        
-        // Set properties for the single light (the sun)
-        if (numLights > 0) {
-            auto light = lights[0];
-            glm::vec3 lightPos = light->GetPosition();
-            glm::vec3 lightColor = light->GetColor();
-            float lightIntensity = light->GetIntensity();
+        // Set light parameters
+        auto firstLight = lightManager.GetFirstLight();
+        if (firstLight) {
+            glm::vec3 lightPos = firstLight->GetPosition();
+            glm::vec3 lightColor = firstLight->GetColor();
+            float lightIntensity = firstLight->GetIntensity();
+            glm::vec3 viewPos = camera.GetPosition();
             
-            // Update sun sphere position to match light position
-            std::string sunName = "Sun_" + light->GetName();
-            auto sunNode = objectManager.FindNode(sunName);
-            if (sunNode) {
-                sunNode->SetPosition(lightPos);
-            }
-            
-            std::string lightPrefix = "lights[0].";
-            shader.SetVec3(lightPrefix + "position", lightPos.x, lightPos.y, lightPos.z);
-            shader.SetVec3(lightPrefix + "color", lightColor.r, lightColor.g, lightColor.b);
-            shader.SetFloat(lightPrefix + "intensity", lightIntensity);
-            
-            // Set distance attenuation parameters (reduced attenuation for better light reach)
-            // For a light at y=15, these values allow good coverage of the arena
-            shader.SetFloat(lightPrefix + "constant", 1.0f);
-            shader.SetFloat(lightPrefix + "linear", 0.05f);      // Reduced linear attenuation
-            shader.SetFloat(lightPrefix + "quadratic", 0.01f);   // Reduced quadratic attenuation
-        }
-        
-        // Debug: Print light info on first frame (only one light - the sun)
-        static bool firstFrame = true;
-        if (firstFrame && numLights > 0) {
-            auto light = lights[0];
-            glm::vec3 pos = light->GetPosition();
-            std::cout << "Rendering with 1 light (Sun) at (" << pos.x << ", " << pos.y << ", " << pos.z 
-                      << "), intensity=" << light->GetIntensity() << std::endl;
-            firstFrame = false;
+            shader.SetVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+            shader.SetVec3("lightColor", lightColor.r * lightIntensity, 
+                          lightColor.g * lightIntensity, lightColor.b * lightIntensity);
+            shader.SetVec3("viewPos", viewPos.x, viewPos.y, viewPos.z);
         }
 
         // Render scene (including weapon, but weapon position needs special handling)
